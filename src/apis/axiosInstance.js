@@ -1,16 +1,22 @@
 import axios from "axios";
 
+import { getAccessToken, setAccessToken, clearAccessToken } from "../utils/tokenStorage";
+
 /**
  * 모든 API 호출은 이 인스턴스를 통해 나갑니다.
  * VITE_API_BASE_URL 은 API 서버 주소이며 공통 접두사 `/api` 를 포함합니다
  * (예: http://localhost:8080/api). 그래서 각 요청 경로는 `/auth/login` 처럼 씁니다.
  *
- * [토큰 저장 방식 — httpOnly 쿠키]
- * AccessToken / RefreshToken은 서버가 Set-Cookie(httpOnly, Secure, SameSite)로
- * 내려주고, 브라우저가 요청마다 자동으로 실어 보냅니다. 그래서 프론트에서는:
- *   - 토큰 값을 직접 읽거나 저장하지 않습니다 (읽을 수도, 읽을 필요도 없음).
- *   - localStorage 등에 토큰을 넣던 코드가 전부 불필요합니다 (XSS 탈취 위험 제거).
- *   - 요청에 `withCredentials: true`만 있으면 쿠키가 자동으로 첨부됩니다.
+ * [토큰 저장 방식 — AccessToken은 메모리, RefreshToken만 httpOnly 쿠키]
+ * 실제 백엔드 동작 기준(2026-09-01 확인)으로 정정합니다:
+ *   - RefreshToken만 서버가 Set-Cookie(httpOnly, Secure, SameSite)로 내려줍니다.
+ *   - AccessToken은 로그인/재발급 응답 **body**의 `data.accessToken`으로 내려오고,
+ *     프론트가 매 요청마다 `Authorization: Bearer {accessToken}` 헤더로 직접 실어 보내야
+ *     인증됩니다 (서버가 쿠키에서 AccessToken을 읽지 않음).
+ *   - 그래서 AccessToken은 `utils/tokenStorage.js`의 메모리 변수로만 들고 있고
+ *     (localStorage 등에 저장 금지 — XSS 탈취 위험), 아래 인터셉터가 로그인/재발급
+ *     응답에서 자동으로 채우고, 요청마다 자동으로 헤더에 붙입니다.
+ *   - `withCredentials: true`는 RefreshToken 쿠키 자동 첨부용으로 계속 필요합니다.
  *
  * [응답 봉투 — 성공/실패 동일]
  * 서버는 모든 응답을 `{ code, msg, data }` (JSON)로 내려줍니다.
@@ -31,7 +37,16 @@ const TIMEOUT_MS = 10_000;
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: TIMEOUT_MS,
-  withCredentials: true, // 모든 요청에 httpOnly 쿠키(Access/Refresh Token) 자동 첨부
+  withCredentials: true, // 모든 요청에 httpOnly 쿠키(RefreshToken) 자동 첨부
+});
+
+/** 요청마다 메모리에 있는 AccessToken을 Authorization 헤더로 자동 첨부 */
+axiosInstance.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 /* ------------------------------------------------------------------ *
@@ -98,7 +113,13 @@ const flushQueue = (error) => {
 };
 
 const requestTokenRefresh = () =>
-  axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+  axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true }).then((res) => {
+    // 재발급 응답도 봉투({code,msg,data})라 body.data.accessToken 위치에서 새 토큰을 꺼내 저장.
+    // 이 요청은 axiosInstance가 아닌 순수 axios라 성공 인터셉터를 안 타므로 여기서 직접 저장한다.
+    const newToken = res.data?.data?.accessToken;
+    if (newToken) setAccessToken(newToken);
+    return res;
+  });
 
 /**
  * 401 처리 본체. 성공 인터셉터(규약 B)와 에러 인터셉터(규약 A) 양쪽에서 호출됩니다.
@@ -125,13 +146,14 @@ const handleUnauthorized = (originalRequest, originalError) => {
 
   return requestTokenRefresh()
     .then(() => {
-      // 성공하면 서버가 새 AccessToken을 Set-Cookie로 내려준 상태.
-      // 프론트는 헤더를 손대지 않고 원래 요청을 그대로 재시도하면 됨.
+      // requestTokenRefresh 안에서 이미 새 AccessToken을 tokenStorage에 저장했음.
+      // 원래 요청을 재시도하면 요청 인터셉터가 새 토큰을 헤더에 다시 붙여준다.
       flushQueue(null);
       return axiosInstance(originalRequest);
     })
     .catch((refreshError) => {
       flushQueue(refreshError);
+      clearAccessToken();
       redirectToLogin();
       return rejectAsEnvelope(refreshError);
     })
@@ -152,14 +174,26 @@ axiosInstance.interceptors.response.use(
     if (body && typeof body === "object" && Number(body.code) === 401) {
       const req = response.config;
       req.__body = body; // 재발급 불가 시 봉투 변환에 쓰도록 보관
-      return isRefreshable(body.code)
-        ? handleUnauthorized(req)
-        : (redirectToLogin(), rejectAsEnvelope({ response: { status: 401, data: body } }));
+      if (isRefreshable(body.code)) {
+        return handleUnauthorized(req);
+      }
+      clearAccessToken();
+      redirectToLogin();
+      return rejectAsEnvelope({ response: { status: 401, data: body } });
     }
 
     // 규약 B: 그 외 논리적 실패 (403/404/409/500 …)
     if (body && typeof body === "object" && Number(body.code) >= 400) {
       return rejectAsEnvelope({ response: { status: Number(body.code), data: body } });
+    }
+
+    // 로그인 성공 응답 등 body.data.accessToken이 있으면 메모리에 저장 (재발급은
+    // requestTokenRefresh가 별도로 저장하므로 여기서 또 저장해도 같은 값이라 무해함).
+    if (body?.data?.accessToken) {
+      setAccessToken(body.data.accessToken);
+    }
+    if (response.config?.url?.includes("/auth/logout")) {
+      clearAccessToken();
     }
 
     // 정상: 봉투 그대로 반환 (결과.data / 결과.msg)
@@ -171,9 +205,12 @@ axiosInstance.interceptors.response.use(
     const body = error.response?.data;
 
     if (status === 401) {
-      return isRefreshable(body?.code ?? 401)
-        ? handleUnauthorized(error.config, error)
-        : (redirectToLogin(), rejectAsEnvelope(error));
+      if (isRefreshable(body?.code ?? 401)) {
+        return handleUnauthorized(error.config, error);
+      }
+      clearAccessToken();
+      redirectToLogin();
+      return rejectAsEnvelope(error);
     }
 
     return rejectAsEnvelope(error);
