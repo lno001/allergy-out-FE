@@ -22,6 +22,31 @@ const flushQueue = (error, token) => {
   pendingQueue.length = 0;
 };
 
+const rejectAsEnvelope = (error) => {
+  const body = error?.response?.data;
+  if (body && typeof body === "object") {
+    return Promise.reject({
+      code: body.code,
+      msg: body.msg ?? "요청을 처리하지 못했습니다.",
+      data: body.data ?? null,
+      status: error.response.status,
+      config: error.config,
+    });
+  }
+  if (error && typeof error === "object" && "code" in error && "msg" in error) {
+    return Promise.reject(error);
+  }
+  return Promise.reject({
+    code: 0,
+    msg:
+      error?.code === "ECONNABORTED"
+        ? "요청 시간이 초과되었습니다."
+        : "네트워크 오류가 발생했습니다.",
+    data: null,
+    status: 0,
+  });
+};
+
 export function setupAuthInterceptor() {
   axiosInstance.interceptors.request.use((config) => {
     const token = getAccessToken();
@@ -35,7 +60,7 @@ export function setupAuthInterceptor() {
     (response) => response,
     (error) => {
       const originalRequest = error.config;
-      const status = error.response?.status;
+      const status = error.response?.status ?? error.status;
 
       if (
         status !== 401 ||
@@ -43,7 +68,7 @@ export function setupAuthInterceptor() {
         originalRequest._retry ||
         isAuthPath(originalRequest.url)
       ) {
-        return Promise.reject(error);
+        return rejectAsEnvelope(error);
       }
 
       if (isRefreshing) {
@@ -74,7 +99,7 @@ export function setupAuthInterceptor() {
           ) {
             window.location.href = "/login";
           }
-          return Promise.reject(refreshError);
+          return rejectAsEnvelope(refreshError);
         })
         .finally(() => {
           isRefreshing = false;
