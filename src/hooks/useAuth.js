@@ -1,8 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-import { getMe, login as loginApi, logout as logoutApi } from "../apis/authApi";
-import axiosInstance from "../apis/axiosInstance";
-import { clearAccessToken, setAccessToken } from "../utils/accessTokenStore";
+import {
+  getMe,
+  login as loginApi,
+  logout as logoutApi,
+  refresh,
+} from "../apis/authApi";
+import { clearAccessToken } from "../utils/accessTokenStore";
 
 const AuthContext = createContext(null);
 
@@ -27,8 +31,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const refreshRes = await axiosInstance.post("/auth/refresh");
-        setAccessToken(refreshRes.data?.accessToken);
+        await refresh();
         const meRes = await getMe();
         setUser(toUser(meRes.data));
       } catch {

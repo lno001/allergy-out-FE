@@ -1,15 +1,26 @@
-import axios from "axios";
-
 import axiosInstance from "./axiosInstance";
-import {
-  clearAccessToken,
-  getAccessToken,
-  setAccessToken,
-} from "../utils/accessTokenStore";
+import { refresh } from "./authApi";
+import { clearAccessToken, getAccessToken } from "../utils/accessTokenStore";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const AUTH_PATHS = ["/auth/login", "/auth/signup", "/auth/refresh"];
+const AUTH_PATHS = [
+  "/auth/login",
+  "/auth/signup",
+  "/auth/refresh",
+  "/auth/logout",
+];
+
 const isAuthPath = (url = "") => AUTH_PATHS.some((path) => url.includes(path));
+
+let isRefreshing = false;
+const pendingQueue = [];
+
+const flushQueue = (error, token) => {
+  pendingQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token);
+  });
+  pendingQueue.length = 0;
+};
 
 export function setupAuthInterceptor() {
   axiosInstance.interceptors.request.use((config) => {
@@ -22,9 +33,9 @@ export function setupAuthInterceptor() {
 
   axiosInstance.interceptors.response.use(
     (response) => response,
-    async (error) => {
+    (error) => {
       const originalRequest = error.config;
-      const status = error.status ?? error.response?.status;
+      const status = error.response?.status;
 
       if (
         status !== 401 ||
@@ -35,31 +46,39 @@ export function setupAuthInterceptor() {
         return Promise.reject(error);
       }
 
-      originalRequest._retry = true;
-
-      try {
-        const refreshRes = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true },
-        );
-        const newToken = refreshRes.data?.data?.accessToken;
-        if (!newToken) {
-          throw refreshRes;
-        }
-        setAccessToken(newToken);
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        clearAccessToken();
-        if (
-          typeof window !== "undefined" &&
-          !window.location.pathname.startsWith("/login")
-        ) {
-          window.location.href = "/login";
-        }
-        return Promise.reject(refreshError);
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          pendingQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest._retry = true;
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return axiosInstance(originalRequest);
+        });
       }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      return refresh()
+        .then((newToken) => {
+          flushQueue(null, newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return axiosInstance(originalRequest);
+        })
+        .catch((refreshError) => {
+          clearAccessToken();
+          flushQueue(refreshError);
+          if (
+            typeof window !== "undefined" &&
+            !window.location.pathname.startsWith("/login")
+          ) {
+            window.location.href = "/login";
+          }
+          return Promise.reject(refreshError);
+        })
+        .finally(() => {
+          isRefreshing = false;
+        });
     },
   );
 }
