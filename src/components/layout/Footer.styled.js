@@ -1,5 +1,4 @@
 import styled, { css } from "styled-components";
-import { Link } from "react-router-dom";
 
 import { theme } from "../../styles/theme";
 
@@ -48,27 +47,24 @@ export const BrandDescription = styled.p`
   color: ${theme.color.sub};
 `;
 
-export const LinkColumn = styled.div`
+export const FooterColumn = styled.div`
   flex: 1 1 16rem;
   display: flex;
   flex-direction: column;
   gap: ${theme.space.md};
 `;
 
-export const LinkColumnTitle = styled.h3`
+export const FooterColumnTitle = styled.h3`
   font-size: ${theme.fontSize.sm};
   font-weight: ${theme.fontWeight.bold};
   color: ${theme.color.text};
 `;
 
-export const FooterLink = styled(Link)`
+/* 지금은 안내/약관 항목을 일반 텍스트로만 둔다. 어떤 페이지로 연결할지 팀 합의가
+   끝나면 styled(Link) 로 바꾸고 to 를 채운다 (레이아웃은 그대로). */
+export const FooterItem = styled.span`
   font-size: ${theme.fontSize.sm};
   color: ${theme.color.sub};
-  transition: color ${theme.transition.fast};
-
-  &:hover {
-    color: ${theme.color.text};
-  }
 
   ${({ $emphasis }) =>
     $emphasis &&
