@@ -13,29 +13,38 @@ import {
   LogoutButton,
   Nav,
   NavItem,
+  UserBadge,
+  UserName,
 } from "./Header.styled";
 
+/* 관리자 판별 role 값. 백엔드 Role enum 기준 — 값이 확정되면 이 줄만 고친다. */
+const ADMIN_ROLE = "ROLE_ADMIN";
+
 /**
+ * @typedef {Object} AuthUser
+ * @property {string} memberId
+ * @property {string} memberName
+ * @property {string} role
+ * @property {string|null} memberImgPath
+ *
  * @typedef {Object} HeaderProps
- * @property {'guest'|'member'|'admin'} authState - 로그인 상태 (비회원/회원/관리자)
- * @property {string} [userName] - 회원일 때 아바타 이니셜에 쓸 이름 (예: "김민지")
- * @property {() => void} [onLogout] - 로그아웃 클릭 핸들러
+ * @property {AuthUser|null} [user] - 로그인한 회원 (useAuth().user). 비로그인이면 null
+ * @property {() => void} [onLogout] - 로그아웃 클릭 핸들러 (useAuth().logout)
  */
 
 /**
- * 서비스 공통 헤더. authState prop으로 비회원/회원/관리자 3가지 상태를 렌더링한다.
+ * 서비스 공통 헤더. useAuth().user 를 받아 비회원 / 회원 / 관리자 3가지로 렌더한다.
  *
- * 로그인 기능(T-5)이 아직 없어서, 지금은 이 컴포넌트가 상태를 직접 갖지 않고
- * 전부 prop으로만 받는다. 나중에 useAuth 훅이 생기면 이 컴포넌트를 쓰는 쪽
- * (레이아웃/페이지)에서 아래처럼 값을 채워 내려주면 된다 — Header 내부는 안 바뀜.
- *
- * // TODO(T-5 연동): const { authState, userName, logout } = useAuth();
- * // <Header authState={authState} userName={userName} onLogout={logout} />
+ * 상태 판단(로그인 여부, 관리자 여부)만 여기서 하고, user·onLogout 은 이 컴포넌트를
+ * 쓰는 쪽(App)이 useAuth() 로 꺼내 내려준다. Header 자체는 훅에 의존하지 않으므로
+ * preview 갤러리에서 mock user 로 세 상태를 그대로 확인할 수 있다.
  *
  * @param {HeaderProps} props
  */
-function Header({ authState = "guest", userName = "", onLogout }) {
+function Header({ user = null, onLogout }) {
   const navigate = useNavigate();
+
+  const isAdmin = user?.role === ADMIN_ROLE;
 
   return (
     <HeaderBar>
@@ -48,7 +57,7 @@ function Header({ authState = "guest", userName = "", onLogout }) {
           </LogoText>
         </LogoLink>
 
-        {authState === "guest" && (
+        {!user && (
           <Nav>
             <NavItem to="/login">로그인</NavItem>
             <Button size="sm" onClick={() => navigate("/signup")}>
@@ -57,22 +66,21 @@ function Header({ authState = "guest", userName = "", onLogout }) {
           </Nav>
         )}
 
-        {authState === "member" && (
+        {user && !isAdmin && (
           <Nav>
             <NavItem to="/allergy-info">알러지 정보</NavItem>
             <NavItem to="/mypage">마이페이지</NavItem>
-            <Avatar
-              name={userName}
-              size="sm"
-              aria-label={userName ? `${userName}님 계정` : "내 계정"}
-            />
+            <UserBadge>
+              <Avatar name={user.memberName} src={user.memberImgPath} size="sm" />
+              <UserName>{user.memberName} 님</UserName>
+            </UserBadge>
             <LogoutButton type="button" onClick={onLogout}>
               로그아웃
             </LogoutButton>
           </Nav>
         )}
 
-        {authState === "admin" && (
+        {user && isAdmin && (
           <Nav>
             <NavItem to="/admin">관리자 페이지</NavItem>
             <LogoutButton type="button" onClick={onLogout}>

@@ -6,7 +6,7 @@ import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
 import { ToastContext } from "../../../components/common/ToastProvider";
 import useSubmitAction from "../../../hooks/useSubmitAction";
-import { pickFieldError } from "../../../utils/apiError";
+import { splitFormError } from "../../../utils/apiError";
 import { FormStack } from "./ModalForm.styled";
 
 /**
@@ -42,7 +42,13 @@ function EditNameModal({ isOpen, onClose, currentName, onSuccess }) {
         showToast?.(res.msg, "success");
         handleClose();
       },
-      { onError: (err) => setError(pickFieldError(err, "memberName")) },
+      {
+        onError: (err) => {
+          const { fieldErrors, formMessage } = splitFormError(err);
+          setError(fieldErrors.memberName || "");
+          if (formMessage) showToast?.(formMessage, "danger");
+        },
+      },
     );
   };
 

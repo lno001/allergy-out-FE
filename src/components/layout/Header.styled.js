@@ -67,6 +67,19 @@ export const NavItem = styled(Link)`
   }
 `;
 
+export const UserBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${theme.space.sm};
+`;
+
+export const UserName = styled.span`
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  color: ${theme.color.text};
+  white-space: nowrap;
+`;
+
 export const LogoutButton = styled.button`
   font-size: ${theme.fontSize.md};
   font-weight: ${theme.fontWeight.medium};

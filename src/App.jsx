@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
+import { useAuth } from "./hooks/useAuth";
 import Preview from "./preview";
 import MyPage from "./pages/mypage/MyPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
@@ -11,10 +12,13 @@ import ProfileEditPage from "./pages/mypage/ProfileEditPage";
  * 아직 라우트가 없는 경로(Footer/Sidebar의 placeholder 링크 등)는 전부
  * Preview(컴포넌트 갤러리)로 빠집니다.
  *
- * // TODO(T-5 연동): /mypage는 회원 전용이라 PrivateRoute가 생기면 그 안으로 옮길 것.
- * // 지금 Header에 넘기는 authState="member"/userName은 로그인 기능이 없어서 mock입니다.
+ * // TODO(T-5): /mypage는 회원 전용이다. 지금은 비로그인 시 useMember()가 401 →
+ * // axiosInstance 인터셉터가 /login 으로 보내는 동작에 맡긴다. 공용 PrivateRoute가
+ * // 생기면 이 라우트를 그 안으로 옮긴다.
  */
 function App() {
+  const { user, logout } = useAuth();
+
   return (
     <Routes>
       <Route path="/" element={<Preview />} />
@@ -22,11 +26,7 @@ function App() {
         path="/mypage"
         element={
           <>
-            <Header
-              authState="member"
-              userName="김민지"
-              onLogout={() => console.log("로그아웃 (T-5 연동 전 mock)")}
-            />
+            <Header user={user} onLogout={logout} />
             <MyPage />
             <Footer />
           </>

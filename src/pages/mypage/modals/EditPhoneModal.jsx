@@ -6,7 +6,7 @@ import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
 import { ToastContext } from "../../../components/common/ToastProvider";
 import useSubmitAction from "../../../hooks/useSubmitAction";
-import { pickFieldError } from "../../../utils/apiError";
+import { splitFormError } from "../../../utils/apiError";
 import { FormStack } from "./ModalForm.styled";
 
 /**
@@ -58,7 +58,13 @@ function EditPhoneModal({ isOpen, onClose, currentPhone, onSuccess }) {
         showToast?.(res.msg, "success");
         handleClose();
       },
-      { onError: (err) => setError(pickFieldError(err, "phone")) },
+      {
+        onError: (err) => {
+          const { fieldErrors, formMessage } = splitFormError(err);
+          setError(fieldErrors.phone || "");
+          if (formMessage) showToast?.(formMessage, "danger");
+        },
+      },
     );
   };
 

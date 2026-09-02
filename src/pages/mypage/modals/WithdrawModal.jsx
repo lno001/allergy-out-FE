@@ -6,7 +6,7 @@ import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
 import { ToastContext } from "../../../components/common/ToastProvider";
 import useSubmitAction from "../../../hooks/useSubmitAction";
-import { pickFieldError } from "../../../utils/apiError";
+import { splitFormError } from "../../../utils/apiError";
 import { Description, FormStack } from "./ModalForm.styled";
 
 /**
@@ -40,12 +40,17 @@ function WithdrawModal({ isOpen, onClose, onSuccess }) {
       async () => {
         const res = await deleteMember(memberPwd);
         showToast?.(res.msg, "success");
-        // TODO(T-5 연동): tokenStorage.clearAccessToken() 실행 후 /login 이동.
-        // 지금은 로그인 기능이 없어서 부모(ProfileEditPage)가 넘겨준 콜백만 호출한다.
+        // 탈퇴 후 처리(로그아웃 + 홈 이동)는 부모(ProfileEditPage)의 onSuccess 가 맡는다.
         onSuccess();
         handleClose();
       },
-      { onError: (err) => setError(pickFieldError(err, "memberPwd")) },
+      {
+        onError: (err) => {
+          const { fieldErrors, formMessage } = splitFormError(err);
+          setError(fieldErrors.memberPwd || "");
+          if (formMessage) showToast?.(formMessage, "danger");
+        },
+      },
     );
   };
 

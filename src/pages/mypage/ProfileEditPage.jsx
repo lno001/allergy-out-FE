@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 
+import { useAuth } from "../../hooks/useAuth";
 import Avatar from "../../components/common/Avatar";
 import Button from "../../components/common/Button";
 import EditEmailModal from "./modals/EditEmailModal";
@@ -37,6 +38,8 @@ import {
  */
 function ProfileEditPage() {
   const { member, refetch } = useOutletContext();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [openModal, setOpenModal] = useState(null); // null | 'name'|'email'|'phone'|'password'|'image'|'withdraw'
 
   const joinDate = member.createDate
@@ -163,9 +166,12 @@ function ProfileEditPage() {
       <WithdrawModal
         isOpen={openModal === "withdraw"}
         onClose={() => setOpenModal(null)}
-        onSuccess={() => {
-          // TODO(T-5 연동): tokenStorage.clearAccessToken() 후 /login 이동.
+        onSuccess={async () => {
           setOpenModal(null);
+          // 탈퇴 완료 — 서버는 refresh 토큰/쿠키를 이미 폐기했다. 클라이언트도
+          // 로그아웃 상태로 만들고(access 토큰 메모리 폐기 + user=null) 홈으로 보낸다.
+          await logout();
+          navigate("/", { replace: true });
         }}
       />
     </CardWrap>

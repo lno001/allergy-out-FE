@@ -6,6 +6,7 @@ import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
 import { ToastContext } from "../../../components/common/ToastProvider";
 import useSubmitAction from "../../../hooks/useSubmitAction";
+import { splitFormError } from "../../../utils/apiError";
 import { FormStack, HelperBox, HelperBoxTitle } from "./ModalForm.styled";
 
 /**
@@ -72,14 +73,12 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
         handleClose();
       },
       {
-        // 서버가 필드를 안 짚어주는 케이스(비번 불일치 / 새 비번=기존과 동일)는
-        // 특정 Input에 억지로 붙이면 오해를 살 수 있어 토스트로만 알린다.
+        // 서버가 필드를 짚어주면(형식 검증) 각 Input 밑에, 안 짚어주면
+        // (비번 불일치 / 새 비번=기존과 동일 / 401 / 500) 토스트로 알린다.
         onError: (err) => {
-          if (err.data) {
-            setErrors(err.data);
-          } else {
-            showToast?.(err.msg, "danger");
-          }
+          const { fieldErrors, formMessage } = splitFormError(err);
+          setErrors(fieldErrors);
+          if (formMessage) showToast?.(formMessage, "danger");
         },
       },
     );

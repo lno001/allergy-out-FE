@@ -13,6 +13,7 @@ import Table from "./components/common/Table";
 import { ToastContext } from "./components/common/ToastProvider";
 import Footer from "./components/layout/Footer";
 import Header from "./components/layout/Header";
+import { useAuth } from "./hooks/useAuth";
 import {
   NavIcon,
   NavItem,
@@ -87,7 +88,6 @@ function AvatarGallery() {
     <Section title="Avatar">
       <Avatar name="김민지" size="sm" />
       <Avatar name="김민지" size="lg" />
-      <Avatar name="" size="lg" />
     </Section>
   );
 }
@@ -251,14 +251,13 @@ function LayoutGallery() {
         Header / Footer
       </h2>
       <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-        <Header authState="guest" />
+        <Header user={null} />
         <Header
-          authState="member"
-          userName="김민지"
+          user={{ memberName: "김민지", role: "ROLE_USER", memberImgPath: null }}
           onLogout={() => console.log("로그아웃 클릭 (프리뷰 mock)")}
         />
         <Header
-          authState="admin"
+          user={{ memberName: "관리자", role: "ROLE_ADMIN", memberImgPath: null }}
           onLogout={() => console.log("로그아웃 클릭 (프리뷰 mock)")}
         />
         <Footer />
@@ -350,9 +349,120 @@ function MyPageGallery() {
   );
 }
 
+/**
+ * 로그인 시험용 폼 — preview 전용 도구.
+ * 실제 LoginPage(pages/auth/*)는 인증 담당이 T-5로 따로 만든다. 여기는 마이페이지 등
+ * 회원 전용 화면을 "진짜 데이터"로 확인하려고 useAuth().login 을 직접 호출해보는 용도.
+ *
+ * 로그인 성공 → accessTokenStore(메모리)에 토큰 저장 → 새로고침 없이 /mypage 로 가면
+ * useMember()가 실제 응답을 받는다. 새로고침하면 메모리 토큰은 날아가지만
+ * AuthProvider 가 refresh 쿠키로 다시 부트스트랩한다.
+ *
+ * 아이디/비밀번호 필드명({ memberId, memberPwd })은 CLAUDE.md [API] 예시 기준 —
+ * 로그인 명세가 확정되면 맞춰야 한다.
+ */
+function LoginTester() {
+  const { user, isReady, login, logout } = useAuth();
+  const showToast = useContext(ToastContext);
+  const [memberId, setMemberId] = useState("");
+  const [memberPwd, setMemberPwd] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await login({ memberId, memberPwd });
+      showToast?.(res?.msg || "로그인 성공", "success");
+    } catch (err) {
+      setError(err?.msg || "로그인에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setMemberId("");
+    setMemberPwd("");
+    showToast?.("로그아웃되었습니다.", "success");
+  };
+
+  return (
+    <div style={{ marginBottom: "3rem", padding: "0 2.4rem" }}>
+      <h2
+        style={{
+          fontSize: "1.6rem",
+          margin: "0 0 1.2rem",
+          borderBottom: "1px solid #eee",
+          paddingBottom: "0.6rem",
+        }}
+      >
+        로그인 (preview 시험용)
+      </h2>
+
+      {!isReady ? (
+        <Loading size="sm" />
+      ) : user ? (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.8rem",
+            maxWidth: "360px",
+          }}
+        >
+          <Alert variant="success">
+            로그인됨 — {user.memberName} ({user.memberId})
+            {user.role ? ` · ${user.role}` : ""}
+          </Alert>
+          <Button variant="secondary" onClick={handleLogout}>
+            로그아웃
+          </Button>
+          <p style={{ fontSize: "1.3rem", color: "#666" }}>
+            이제 <a href="/mypage">/mypage</a> 로 이동하면 실제 데이터로 렌더됩니다.
+          </p>
+        </div>
+      ) : (
+        <form
+          onSubmit={handleLogin}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.8rem",
+            maxWidth: "360px",
+          }}
+        >
+          <Input
+            label="아이디"
+            value={memberId}
+            onChange={(e) => setMemberId(e.target.value)}
+            placeholder="memberId"
+            autoComplete="username"
+          />
+          <Input
+            label="비밀번호"
+            type="password"
+            value={memberPwd}
+            onChange={(e) => setMemberPwd(e.target.value)}
+            error={error}
+            autoComplete="current-password"
+          />
+          <Button type="submit" loading={submitting} disabled={!memberId || !memberPwd}>
+            로그인
+          </Button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 export default function Preview() {
   return (
     <div>
+      <LoginTester />
       <LayoutGallery />
       <MyPageGallery />
       <div style={{ maxWidth: "960px", margin: "0 auto", padding: "2.4rem" }}>
