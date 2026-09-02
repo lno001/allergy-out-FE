@@ -57,9 +57,11 @@ import {
 /**
  * @typedef {Object} RecipeCreateRequest
  * multipart/form-data 로 전송되는 논리적 필드 구조 (명세 레시피등록 V1.8).
+ * 명세 표는 대표 이미지 키를 RECIPE_MAIN_IMG 로 적었으나, 나머지 키와 맞춰
+ * camelCase(recipeMainImg)로 통일해 보낸다 — 백엔드 @RequestParam 도 함께 맞춰야 함.
  * @property {string} recipeTitle
  * @property {string} recipeInfo
- * @property {File}   RECIPE_MAIN_IMG
+ * @property {File}   recipeMainImg
  * @property {{ materialName: string, amount: string }[]}            materialList
  * @property {{ stepOrder: number, stepInfo: string, stepImg?: File }[]} stepList
  */
@@ -153,11 +155,12 @@ function RecipeCreatePage() {
     }
     setSubmitError("");
 
-    // 명세 키 순서대로 FormData 구성 (레시피등록 V1.8 "요청 데이터 형식")
+    // 명세(레시피등록 V1.8 "요청 데이터 형식") 키 순서대로 FormData 구성.
+    // 대표 이미지 키는 명세의 RECIPE_MAIN_IMG 대신 camelCase 로 통일 (recipeMainImg).
     const formData = new FormData();
     formData.append("recipeTitle", recipeTitle.trim());
     formData.append("recipeInfo", recipeInfo.trim());
-    formData.append("RECIPE_MAIN_IMG", mainImage);
+    formData.append("recipeMainImg", mainImage);
     materials.forEach((m, i) => {
       formData.append(`materialList[${i}].materialName`, m.materialName.trim());
       formData.append(`materialList[${i}].amount`, m.amount.trim());
