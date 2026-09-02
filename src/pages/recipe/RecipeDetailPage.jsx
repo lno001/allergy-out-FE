@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
+import Modal from "../../components/common/Modal";
+import { ToastContext } from "../../components/common/ToastProvider";
 import { useAuth } from "../../hooks/useAuth";
-import { getRecipe } from "../../apis/recipeApi";
+import { deleteRecipe, getRecipe } from "../../apis/recipeApi";
 import {
   PageWrapper,
   TopBar,
@@ -103,12 +105,16 @@ function RecipeDetailPage() {
   const { recipeNo } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const showToast = useContext(ToastContext);
 
   const [data, setData] = useState(
     /** @type {RecipeDetailResponse | null} */ (null),
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(""); // 404("존재하지 않는 레시피입니다") 포함, 서버 msg 그대로
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -127,6 +133,22 @@ function RecipeDetailPage() {
 
     fetchDetail();
   }, [recipeNo]);
+
+  // 삭제 — 확인 모달에서 "삭제" 클릭 시. 명세: DELETE /api/recipes/{recipeNo}
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await deleteRecipe(recipeNo);
+      showToast?.(res?.msg ?? "레시피 삭제 성공", "success");
+      navigate(RECIPE_LIST_PATH, { replace: true }); // 삭제된 레시피로 뒤로가기 방지
+    } catch (err) {
+      // 401 로그인 필요 / 403 권한 없음 / 404 없는 레시피 / 500 — 서버 msg 그대로
+      showToast?.(err?.msg ?? "레시피 삭제에 실패했습니다.", "danger");
+      setIsDeleteOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -167,7 +189,11 @@ function RecipeDetailPage() {
       <Hero>
         <HeroImage>
           {/* src 는 *ImgPath (S3 URL). recipeMainImg 는 원본 파일명이라 안 씀 */}
-          <img src={recipe.recipesImgPath} alt={recipe.recipeTitle} onError={hideBrokenImage} />
+          <img
+            src={recipe.recipesImgPath}
+            alt={recipe.recipeTitle}
+            onError={hideBrokenImage}
+          />
         </HeroImage>
 
         <HeroInfo>
@@ -232,7 +258,7 @@ function RecipeDetailPage() {
           실제 수정/삭제 권한은 PUT/DELETE API 에서 서버가 다시 검증한다(403). */}
       {user?.memberNo === recipe.memberNo && (
         <BottomActions>
-          <Button variant="dangerOutline" disabled title="삭제 기능 준비 중">
+          <Button variant="dangerOutline" onClick={() => setIsDeleteOpen(true)}>
             삭제하기
           </Button>
           <Button
@@ -243,6 +269,33 @@ function RecipeDetailPage() {
           </Button>
         </BottomActions>
       )}
+
+      <Modal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        title="레시피 삭제"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setIsDeleteOpen(false)}
+              disabled={isDeleting}
+            >
+              취소
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDelete}
+              loading={isDeleting}
+            >
+              삭제
+            </Button>
+          </>
+        }
+      >
+        <p>이 레시피를 삭제하면 되돌릴 수 없습니다.</p>
+        <p>삭제할까요?</p>
+      </Modal>
     </PageWrapper>
   );
 }
