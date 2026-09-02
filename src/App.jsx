@@ -7,6 +7,7 @@ import Preview from "./preview";
 import MyPage from "./pages/mypage/MyPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import RecipeCreatePage from "./pages/recipe/RecipeCreatePage";
+import RecipeEditPage from "./pages/recipe/RecipeEditPage";
 import RecipeListPage from "./pages/recipe/RecipeListPage";
 import RecipeDetailPage from "./pages/recipe/RecipeDetailPage";
 
@@ -19,6 +20,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/recipe/form" element={<RecipeCreatePage />} />
         <Route path="/recipe" element={<RecipeListPage />} />
+        <Route path="/recipe/:recipeNo/edit" element={<RecipeEditPage />} />
         <Route path="/recipe/:recipeNo" element={<RecipeDetailPage />} />
         <Route path="/mypage" element={<MyPage />}>
           <Route index element={<ProfileEditPage />} />

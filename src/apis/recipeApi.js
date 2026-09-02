@@ -15,9 +15,9 @@ export function createRecipe(payload) {
   return axiosInstance.post("/recipes", payload);
 }
 
-/** 레시피 수정 */
+/** 레시피 수정 (multipart/form-data — 백엔드 @PatchMapping) */
 export function updateRecipe(recipeNo, payload) {
-  return axiosInstance.put(`/recipes/${recipeNo}`, payload);
+  return axiosInstance.patch(`/recipes/${recipeNo}`, payload);
 }
 
 /** 레시피 삭제 */

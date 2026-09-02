@@ -39,7 +39,7 @@ import {
   StepItemTitle,
   StepImageLabel,
   FormActions,
-} from "./RecipeCreatePage.styled";
+} from "./recipeForm.styled";
 
 /**
  * RecipeCreatePage  (route: /recipe/form, 권한: 회원 / ROLE_USER)

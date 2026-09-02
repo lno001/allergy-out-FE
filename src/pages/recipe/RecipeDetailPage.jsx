@@ -51,6 +51,7 @@ import {
  * @typedef {Object} RecipeDetail
  * 규칙: *Img = 원본 파일명(표시용) / *ImgPath = S3 버킷 URL(<img src>).
  * @property {number}  recipeNo
+ * @property {number}  memberNo          작성자 회원번호 (로그인 사용자와 비교해 수정/삭제 노출 판단)
  * @property {string}  recipeTitle
  * @property {string}  recipeInfo        요리 팁/설명
  * @property {string}  recipeMainImg     대표 이미지 원본 파일명 (src 에 쓰지 않음)
@@ -227,9 +228,9 @@ function RecipeDetailPage() {
       </StepsSection>
 
       {/* ---------------- 작성자 액션 ----------------
-          명세 V1.3 은 "내 글인지" 판단할 데이터(memberNo/isOwner)를 안 주므로,
-          지금은 "로그인 상태"에서만 노출한다. 백엔드가 isOwner 를 주면 그 기준으로 교체 필요. */}
-      {user && (
+          로그인 사용자 memberNo === 작성자 memberNo 일 때만 노출.
+          실제 수정/삭제 권한은 PUT/DELETE API 에서 서버가 다시 검증한다(403). */}
+      {user?.memberNo === recipe.memberNo && (
         <BottomActions>
           <Button variant="dangerOutline" disabled title="삭제 기능 준비 중">
             삭제하기
