@@ -30,7 +30,13 @@ export const FilterRow = styled.div`
   margin-bottom: ${theme.space["2xl"]};
 `;
 
-/* 검색: 명세 V1.4 에 검색 파라미터가 없어 지금은 비활성 UI (figma 레이아웃 유지용) */
+/* 검색창 + "검색" 버튼을 한 줄로 묶는 form (엔터로도 submit 되게) */
+export const SearchForm = styled.form`
+  display: flex;
+  flex: 1;
+  gap: ${theme.space.sm};
+`;
+
 export const SearchInput = styled.input`
   flex: 1;
   padding: ${theme.space.md} ${theme.space.xl};
@@ -44,9 +50,9 @@ export const SearchInput = styled.input`
     color: ${theme.color.placeholder};
   }
 
-  &:disabled {
-    background: ${theme.color.bgSoft};
-    cursor: not-allowed;
+  &:focus {
+    outline: none;
+    border-color: ${theme.color.borderFocus};
   }
 `;
 

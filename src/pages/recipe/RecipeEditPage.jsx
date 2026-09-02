@@ -265,7 +265,8 @@ function RecipeEditPage() {
       /** @type {ApiEnvelope} */
       const res = await updateRecipe(recipeNo, formData);
       showToast?.(res?.msg ?? "레시피 수정 성공했습니다.", "success");
-      navigate(detailPath);
+      // 수정 완료 후 바뀐 내용을 바로 보도록 상세로. replace 라서 뒤로가기 눌러도 수정폼으로 안 돌아감
+      navigate(detailPath, { replace: true });
     } catch (err) {
       // 400 유효성 / 401 미로그인 / 403 본인 아님 / 404 없는 레시피 / 500 — msg 그대로
       setSubmitError(err?.msg ?? "레시피 수정에 실패했습니다.");
@@ -274,7 +275,8 @@ function RecipeEditPage() {
     }
   };
 
-  const handleCancel = () => navigate(detailPath);
+  // 취소는 상세보기로. replace 라서 상세에서 뒤로가기 눌러도 수정폼으로 안 돌아감
+  const handleCancel = () => navigate(detailPath, { replace: true });
 
   if (isLoading || !isReady) {
     return (

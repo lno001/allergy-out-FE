@@ -10,6 +10,7 @@ import {
   PageWrapper,
   TopRow,
   FilterRow,
+  SearchForm,
   SearchInput,
   ContentArea,
   RecipeGrid,
@@ -27,12 +28,16 @@ import {
  * RecipeListPage  (route: /recipe — App.jsx <Route path="/recipe">)
  * -----------------------------------------------------------------------------
  * 회원·비회원이 레시피(조리법) 게시판에 들어왔을 때 목록을 보여주는 화면.
- * 명세: 조리법 목록 조회 V1.4 — GET /api/recipes?page=&size=
+ * 명세: 조리법 목록 조회 V1.4 + 조리법 목록 키워드 조회 V1.3
+ *      — GET /api/recipes?page=&size=&keyword=
  *
  * - 인증: 회원이면 토큰이 자동 첨부되어 백엔드가 알러지 재료를 뺀 목록을 준다.
  *   비회원이면 전체 목록. 프론트는 동일하게 호출만 하고 분기하지 않는다.
- * - 명세 V1.4 에는 검색·필터 파라미터가 없어, 검색창/"필터 변경"은 지금 비활성 UI 다
- *   (figma 레이아웃 유지용, 파라미터가 명세에 생기면 연결).
+ * - 검색: 검색창에 키워드를 넣고 "검색" 버튼(또는 엔터) → keyword 파라미터로 전달.
+ *   keyword 가 비어 있으면 파라미터를 빼서 전체 조회와 동일하게 동작한다(스펙).
+ *   실시간 검색이 아니라 submit 시점에만 요청 → 입력용 keyword 와
+ *   "확정된 검색어" appliedKeyword 를 분리해 둔다.
+ * - "필터 변경" 은 아직 명세에 필터 파라미터가 없어 비활성 UI 로 남겨둔다.
  * - 헤더/푸터는 components/layout 담당. 라우트 등록(App.jsx)은 이번 범위 아님.
  * - props 없음 → @typedef(props) 두지 않음 (CLAUDE.md 2.[작명]).
  */
@@ -71,6 +76,8 @@ const recipeDetailPath = (recipeNo) => `/recipe/${recipeNo}`;
 
 function RecipeListPage() {
   const [page, setPage] = useState(1); // 화면/Pagination 은 1부터, 서버는 0부터 → 요청 시 -1
+  const [keyword, setKeyword] = useState(""); // 검색창에 입력 중인 값 (controlled input)
+  const [appliedKeyword, setAppliedKeyword] = useState(""); // 검색 버튼/엔터로 확정된 검색어 → 실제 요청에 사용
   const [recipes, setRecipes] = useState(/** @type {RecipeListItem[]} */ ([]));
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +90,11 @@ function RecipeListPage() {
       setIsLoading(true);
       setError("");
       try {
-        const res = await getRecipeList({ page: page - 1, size: PAGE_SIZE });
+        // keyword 는 비어 있으면 아예 빼서 전체 조회와 동일하게 동작시킨다(스펙)
+        const params = { page: page - 1, size: PAGE_SIZE };
+        if (appliedKeyword) params.keyword = appliedKeyword;
+
+        const res = await getRecipeList(params);
         if (ignore) return;
         /** @type {RecipeListResponse} */
         const data = res?.data ?? { recipes: [], pageInfo: { totalPages: 1 } };
@@ -102,7 +113,14 @@ function RecipeListPage() {
     return () => {
       ignore = true;
     };
-  }, [page]);
+  }, [page, appliedKeyword]);
+
+  // 검색 버튼 클릭 또는 인풋에서 엔터(form submit) → 검색어 확정 + 1페이지부터 다시 조회
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    setPage(1);
+    setAppliedKeyword(keyword.trim());
+  };
 
   return (
     <PageWrapper className="container">
@@ -113,16 +131,22 @@ function RecipeListPage() {
       </TopRow>
 
       <FilterRow>
-        {/* 명세 V1.4 에 필터/검색 파라미터가 없어 지금은 비활성 (준비 중) */}
+        {/* 필터는 아직 명세에 파라미터가 없어 비활성 (준비 중) */}
         <Button variant="secondary" disabled title="필터 기능 준비 중">
           필터 변경
         </Button>
-        <SearchInput
-          type="search"
-          disabled
-          placeholder="안전한 재료, 레시피를 검색해보세요"
-          aria-label="레시피 검색 (준비 중)"
-        />
+        <SearchForm onSubmit={handleSearchSubmit}>
+          <SearchInput
+            type="search"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="안전한 재료, 레시피를 검색해보세요"
+            aria-label="레시피 검색"
+          />
+          <Button type="submit" variant="primary">
+            검색
+          </Button>
+        </SearchForm>
       </FilterRow>
 
       <ContentArea>
