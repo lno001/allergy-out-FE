@@ -4,6 +4,7 @@ import Layout from "./components/layout/Layout";
 import Preview from "./preview";
 import MyPage from "./pages/mypage/MyPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
+import RecipeCreatePage from "./pages/recipe/RecipeCreatePage";
 
 /**
  * 라우트 정의만. 헤더/푸터는 Layout 이 전 페이지 공통으로 그린다.
@@ -17,6 +18,7 @@ function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Preview />} />
+        <Route path="/recipe" element={<RecipeCreatePage />} />
         <Route path="/mypage" element={<MyPage />}>
           <Route index element={<ProfileEditPage />} />
         </Route>
