@@ -5,6 +5,8 @@ import Preview from "./preview";
 import MyPage from "./pages/mypage/MyPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 
+import RecipeCreatePage from "./pages/recipe/RecipeCreatePage";
+
 /**
  * 라우트 정의만. 헤더/푸터는 Layout 이 전 페이지 공통으로 그린다.
  * 아직 화면이 없는 경로(Footer/사이드바 placeholder 링크 등)는 Preview(컴포넌트 갤러리)로 폴백.
@@ -15,8 +17,10 @@ import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 function App() {
   return (
     <Routes>
+    <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Preview />} />
+        <Route path="/recipe" element={<RecipeCreatePage />} />
         <Route path="/mypage" element={<MyPage />}>
           <Route index element={<ProfileEditPage />} />
         </Route>
