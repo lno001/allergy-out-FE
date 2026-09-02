@@ -9,11 +9,7 @@ import { MAX_ALLERGY_COUNT, useAllergyProfile } from "../../hooks/useAllergyProf
 import { ALLERGY_OPTIONS } from "./allergyOptions";
 import {
   AddRow,
-  Banner,
-  BannerSubtitle,
-  BannerTitle,
-  Card,
-  CardTitle,
+  CardWrap,
   Chip,
   ChipEmptyText,
   ChipRemoveButton,
@@ -22,16 +18,22 @@ import {
   OptionCheckbox,
   OptionGrid,
   OptionLabel,
-  PageWrapper,
   QuickAddButton,
   QuickAddGroup,
   QuickAddGroupLabel,
   QuickAddRow,
+  Section,
+  SectionDescription,
+  SectionDivider,
+  SectionLabel,
+  SectionTitle,
 } from "./AllergyManagePage.styled";
 import { ALLERGEN_SUB_ITEMS, CATEGORY_BUNDLES, QUICK_BUNDLES, QUICK_SINGLE_ITEMS } from "./allergyQuickAdd";
 
 /**
  * 마이페이지 > 알러지 필터 관리 (/mypage/allergy)
+ * ProfileEditPage와 같은 CardWrap/SectionTitle/SectionDivider 패턴을 써서
+ * 마이페이지의 다른 탭과 같은 카드 하나로 보이게 한다(개별 Card로 안 쪼갬).
  * - "빠른 추가": 묶음(5대 알러지 등)/계통(갑각류 등)/개별 항목을 버튼 한 번으로 추가
  * - "알러지 직접 추가": 목록에 없는 재료를 자유 입력으로 추가
  * - "현재 등록된 필터": 지금 선택된 전체 목록 칩으로 요약, X로 제거
@@ -104,27 +106,32 @@ function AllergyManagePage() {
 
   if (isLoading) {
     return (
-      <PageWrapper>
-        <Loading label="알러지 정보를 불러오는 중" />
-      </PageWrapper>
+      <CardWrap>
+        <Section>
+          <Loading label="알러지 정보를 불러오는 중" />
+        </Section>
+      </CardWrap>
     );
   }
 
   const selectedList = Array.from(selected);
 
   return (
-    <PageWrapper>
-      <Banner>
-        <BannerTitle>나의 알러지 필터 관리</BannerTitle>
-        <BannerSubtitle>
-          알러지 유발 재료를 등록하면, 그 재료가 들어간 레시피는 추천·검색에서 제외돼요.
-        </BannerSubtitle>
-      </Banner>
+    <CardWrap>
+      <SectionTitle>나의 알러지 필터 관리</SectionTitle>
+      <SectionDescription>
+        알러지 유발 재료를 등록하면, 그 재료가 들어간 레시피는 추천·검색에서 제외돼요.
+      </SectionDescription>
 
-      {error && <Alert variant="danger">{error}</Alert>}
+      {error && (
+        <Section>
+          <Alert variant="danger">{error}</Alert>
+        </Section>
+      )}
 
-      <Card>
-        <CardTitle>빠른 추가</CardTitle>
+      <SectionDivider />
+      <Section>
+        <SectionLabel>빠른 추가</SectionLabel>
 
         <QuickAddGroup>
           <QuickAddGroupLabel>묶음</QuickAddGroupLabel>
@@ -163,10 +170,11 @@ function AllergyManagePage() {
             ))}
           </QuickAddRow>
         </QuickAddGroup>
-      </Card>
+      </Section>
 
-      <Card>
-        <CardTitle>알러지 직접 추가</CardTitle>
+      <SectionDivider />
+      <Section>
+        <SectionLabel>알러지 직접 추가</SectionLabel>
         <AddRow onSubmit={handleAddCustom}>
           <Input
             placeholder="재료명을 입력하세요 (예: 아보카도)"
@@ -176,10 +184,11 @@ function AllergyManagePage() {
           />
           <Button type="submit">추가</Button>
         </AddRow>
-      </Card>
+      </Section>
 
-      <Card>
-        <CardTitle>현재 등록된 필터 ({selectedList.length}/{MAX_ALLERGY_COUNT})</CardTitle>
+      <SectionDivider />
+      <Section>
+        <SectionLabel>현재 등록된 필터 ({selectedList.length}/{MAX_ALLERGY_COUNT})</SectionLabel>
         <ChipRow>
           {selectedList.length === 0 ? (
             <ChipEmptyText>아직 등록된 알러지 항목이 없어요.</ChipEmptyText>
@@ -198,10 +207,11 @@ function AllergyManagePage() {
             ))
           )}
         </ChipRow>
-      </Card>
+      </Section>
 
-      <Card>
-        <CardTitle>전체 알러지 항목</CardTitle>
+      <SectionDivider />
+      <Section>
+        <SectionLabel>전체 알러지 항목</SectionLabel>
         <OptionGrid role="group" aria-label="알러지 유발 재료 목록">
           {ALLERGY_OPTIONS.map((option) => (
             <OptionLabel key={option}>
@@ -213,14 +223,17 @@ function AllergyManagePage() {
             </OptionLabel>
           ))}
         </OptionGrid>
-      </Card>
+      </Section>
 
-      <FooterRow>
-        <Button onClick={handleSave} loading={isSaving} size="lg">
-          필터 저장하기
-        </Button>
-      </FooterRow>
-    </PageWrapper>
+      <SectionDivider />
+      <Section>
+        <FooterRow>
+          <Button onClick={handleSave} loading={isSaving} size="lg">
+            필터 저장하기
+          </Button>
+        </FooterRow>
+      </Section>
+    </CardWrap>
   );
 }
 

@@ -2,43 +2,44 @@ import styled from "styled-components";
 
 import { theme } from "../../styles/theme";
 
-export const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${theme.space["2xl"]};
-`;
-
-export const Banner = styled.div`
-  padding: ${theme.space["2xl"]};
-  border-radius: ${theme.radius.lg};
-  background: linear-gradient(135deg, ${theme.color.primary}, ${theme.color.primary700});
-  color: ${theme.color.textOnPrimary};
-  display: flex;
-  flex-direction: column;
-  gap: ${theme.space.xs};
-`;
-
-export const BannerTitle = styled.h1`
-  font-size: ${theme.fontSize.xl};
-  font-weight: ${theme.fontWeight.bold};
-`;
-
-export const BannerSubtitle = styled.p`
-  font-size: ${theme.fontSize.sm};
-  opacity: 0.9;
-`;
-
-export const Card = styled.section`
+/* ProfileEditPage.styled.js의 CardWrap/SectionTitle/SectionDescription/SectionDivider와
+   동일한 값을 그대로 씀 — 마이페이지 다른 탭이랑 이질감 없게 통일. */
+export const CardWrap = styled.section`
+  flex: 1;
+  min-width: 0;
   background-color: ${theme.color.bg};
   border: 1px solid ${theme.color.gray200};
   border-radius: ${theme.radius.lg};
-  padding: ${theme.space.xl};
+  overflow: hidden;
+`;
+
+export const SectionTitle = styled.h2`
+  padding: ${theme.space["2xl"]} ${theme.space["2xl"]} 0;
+  font-size: ${theme.fontSize.lg};
+  font-weight: ${theme.fontWeight.bold};
+  color: ${theme.color.text};
+`;
+
+export const SectionDescription = styled.p`
+  padding: ${theme.space.sm} ${theme.space["2xl"]} 0;
+  font-size: ${theme.fontSize.sm};
+  color: ${theme.color.sub};
+`;
+
+export const SectionDivider = styled.div`
+  border-top: 1px solid ${theme.color.gray100};
+`;
+
+/** 페이지 안의 각 그룹(빠른 추가/직접 추가/현재 필터/전체 항목)을 감싸는 패딩 블록.
+ *  ProfileEditPage의 FieldGrid와 같은 패딩 값을 쓰되, 그리드가 아니라 세로 목록이라 flex column. */
+export const Section = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${theme.space.lg};
+  padding: ${theme.space.xl} ${theme.space["2xl"]};
 `;
 
-export const CardTitle = styled.h2`
+export const SectionLabel = styled.h3`
   font-size: ${theme.fontSize.md};
   font-weight: ${theme.fontWeight.bold};
   color: ${theme.color.text};
