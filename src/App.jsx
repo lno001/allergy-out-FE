@@ -1,37 +1,31 @@
 import { Routes, Route } from "react-router-dom";
 
-import Footer from "./components/layout/Footer";
-import Header from "./components/layout/Header";
-import MyPageLayout from "./components/layout/MyPageLayout";
-import AllergyManagePage from "./pages/mypage/AllergyManagePage";
+import Layout from "./components/layout/Layout";
 import Preview from "./preview";
+import AllergyManagePage from "./pages/mypage/AllergyManagePage";
+import MyPage from "./pages/mypage/MyPage";
+import ProfileEditPage from "./pages/mypage/ProfileEditPage";
+import RecipeCreatePage from "./pages/recipe/RecipeCreatePage";
 
 /**
- * 실제 페이지 라우팅이 붙기 전까지, "" 경로는 공통 컴포넌트 갤러리(preview)를 보여줍니다.
- * Header/Footer는 Preview에는 안 씌우고(컴포넌트 갤러리라 사이트 chrome이 안 어울림),
- * 실제 페이지 경로에서만 감쌉니다. 페이지가 늘어나면 이 감싸는 방식을 공통 Layout으로
- * 뽑는 걸 고려하세요(지금은 페이지가 하나라 과하게 일반화 안 함).
+ * 라우트 정의만. 헤더/푸터는 Layout 이 전 페이지 공통으로 그린다.
+ * 아직 화면이 없는 경로(Footer/사이드바 placeholder 링크 등)는 Preview(컴포넌트 갤러리)로 폴백.
  *
- * /mypage/allergy는 원래 인증 필요(로그인 회원 전용) 화면이지만, PrivateRoute(T-5)가
- * 아직 없어서 지금은 가드 없이 연결만 해둠 — 로그인 안 한 상태로 들어가면 401 나고
- * axiosInstance 인터셉터가 /login으로 보냄.
+ * // TODO(T-5): /mypage는 회원 전용이다. 지금은 비로그인 시 MyPage 의 useMember()가 401 →
+ * // 인터셉터가 /login 으로 보내는 동작에 맡긴다. 공용 PrivateRoute가 생기면 그 안으로 옮긴다.
  */
 function App() {
   return (
     <Routes>
-      <Route path="" element={<Preview />} />
-      <Route
-        path="/mypage/allergy"
-        element={(
-          <>
-            <Header />
-            <MyPageLayout>
-              <AllergyManagePage />
-            </MyPageLayout>
-            <Footer />
-          </>
-        )}
-      />
+      <Route element={<Layout />}>
+        <Route path="/" element={<Preview />} />
+        <Route path="/recipe" element={<RecipeCreatePage />} />
+        <Route path="/mypage" element={<MyPage />}>
+          <Route index element={<ProfileEditPage />} />
+          <Route path="allergy" element={<AllergyManagePage />} />
+        </Route>
+        <Route path="*" element={<Preview />} />
+      </Route>
     </Routes>
   );
 }

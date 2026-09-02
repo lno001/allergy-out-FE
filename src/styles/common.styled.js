@@ -591,6 +591,45 @@ export const BadgePill = styled.span`
 `;
 
 /* ============================================================
+   Avatar — 이니셜 fallback + 이미지, 원형
+   size: sm | lg (Header는 sm, 프로필 카드/사이드바/이미지 모달은 lg)
+   ============================================================ */
+
+const AVATAR_SIZE_STYLES = {
+  sm: css`
+    width: ${theme.space['4xl']};
+    height: ${theme.space['4xl']};
+    font-size: ${theme.fontSize.sm};
+  `,
+  lg: css`
+    width: ${theme.space['6xl']};
+    height: ${theme.space['6xl']};
+    font-size: ${theme.fontSize.xl};
+  `,
+};
+
+export const AvatarCircle = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: ${theme.radius.full};
+  overflow: hidden;
+  background-color: ${theme.color.primary50};
+  border: 1.5px solid ${theme.color.primary200};
+  color: ${theme.color.primary700};
+  font-weight: ${theme.fontWeight.bold};
+
+  ${({ $size }) => AVATAR_SIZE_STYLES[$size] || AVATAR_SIZE_STYLES.sm}
+`;
+
+export const AvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+/* ============================================================
    Toast — ToastProvider가 화면 우하단에 띄우는 알림
    variant: success | danger | warning | info (Alert와 동일한 팔레트 재사용)
    ============================================================ */
