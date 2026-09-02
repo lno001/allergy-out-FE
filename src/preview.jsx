@@ -1,6 +1,8 @@
 import { useContext, useState } from "react";
+import { Outlet, Route, Routes } from "react-router-dom";
 
 import Alert from "./components/common/Alert";
+import Avatar from "./components/common/Avatar";
 import Badge from "./components/common/Badge";
 import Button from "./components/common/Button";
 import Input from "./components/common/Input";
@@ -9,6 +11,19 @@ import Modal from "./components/common/Modal";
 import Pagination from "./components/common/Pagination";
 import Table from "./components/common/Table";
 import { ToastContext } from "./components/common/ToastProvider";
+import Footer from "./components/layout/Footer";
+import Header from "./components/layout/Header";
+import {
+  NavIcon,
+  NavItem,
+  NavList,
+  PageWrap,
+  ProfileEmail,
+  ProfileName,
+  ProfileSummary,
+  SidebarWrap,
+} from "./pages/mypage/MyPage.styled";
+import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 
 /**
  * 공통 컴포넌트 갤러리.
@@ -63,6 +78,16 @@ function ButtonGallery() {
       <Button loading>loading</Button>
       <Button disabled>disabled</Button>
       <Button variant="secondary" size="md"></Button>
+    </Section>
+  );
+}
+
+function AvatarGallery() {
+  return (
+    <Section title="Avatar">
+      <Avatar name="김민지" size="sm" />
+      <Avatar name="김민지" size="lg" />
+      <Avatar name="" size="lg" />
     </Section>
   );
 }
@@ -208,19 +233,141 @@ function ToastTrigger() {
   );
 }
 
+/**
+ * Header/Footer는 화면 폭을 그대로 써야 Figma와 비교가 되므로,
+ * 아래 960px 제한 컨테이너 밖(전체 폭)에 따로 둔다.
+ */
+function LayoutGallery() {
+  return (
+    <div style={{ marginBottom: "3rem" }}>
+      <h2
+        style={{
+          fontSize: "1.6rem",
+          margin: "0 2.4rem 1.2rem",
+          borderBottom: "1px solid #eee",
+          paddingBottom: "0.6rem",
+        }}
+      >
+        Header / Footer
+      </h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+        <Header authState="guest" />
+        <Header
+          authState="member"
+          userName="김민지"
+          onLogout={() => console.log("로그아웃 클릭 (프리뷰 mock)")}
+        />
+        <Header
+          authState="admin"
+          onLogout={() => console.log("로그아웃 클릭 (프리뷰 mock)")}
+        />
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 마이페이지는 로그인(T-5)이 없으면 실제 API가 401을 내서 빈 화면처럼 보인다.
+ * 로그인 없이도 생김새를 볼 수 있도록, 실제 /mypage 와 똑같이
+ * "셸(사이드바 + <Outlet>) + 개인정보 관리 탭" 전체를 mock 데이터로 그린다.
+ *
+ * MyPage.jsx(셸)는 useMember()로 진짜 API를 치므로 그대로 못 올린다 → 셸의
+ * 마크업만 MyPage.styled.js의 export(PageWrap/SidebarWrap/...)를 재사용해
+ * MyPageShellMock 으로 재현한다. 탭 페이지(ProfileEditPage)는 useOutletContext()로
+ * member를 받으므로, 실제 <Outlet>이 하듯 <Routes>/<Route>로 한 번 더 감싸 context를
+ * 흉내낸다. (main.jsx가 이미 <BrowserRouter>로 감싸고 있어서 여기서 또 Router를
+ * 새로 만들면 "Router 안에 Router" 에러 → MemoryRouter 대신 같은 Router 위에
+ * <Routes>만 하나 더 얹는다. 실제 주소가 "/"이므로 path="/"로 맞춘다.)
+ * 사이드바 탭 링크는 전부 "/"로 걸어 프리뷰를 벗어나지 않게 하고, "개인정보 관리"만
+ * 활성 상태로 표시한다. "저장하기" 등 실제 제출은 진짜 API를 치므로 여기선 성공하지
+ * 않는다 — 레이아웃 확인용.
+ */
+const MYPAGE_NAV = [
+  { key: "info", label: "개인정보 관리", icon: "👤" },
+  { key: "allergy", label: "알러지 필터 관리", icon: "🛡️" },
+  { key: "bookmark", label: "즐겨찾는 레시피", icon: "❤️" },
+  { key: "recipes", label: "내 작성 레시피", icon: "📝" },
+];
+
+const MOCK_MEMBER = {
+  memberId: "allergyout123",
+  memberImgPath: null,
+  memberName: "김민지",
+  phone: "01012341234",
+  email: "minji@allergy.com",
+  createDate: "2024-03-15T00:00:00",
+};
+
+function MyPageShellMock() {
+  return (
+    <PageWrap>
+      <SidebarWrap>
+        <ProfileSummary>
+          <Avatar
+            name={MOCK_MEMBER.memberName}
+            src={MOCK_MEMBER.memberImgPath}
+            size="lg"
+          />
+          <ProfileName>{MOCK_MEMBER.memberName} 님</ProfileName>
+          <ProfileEmail>{MOCK_MEMBER.email}</ProfileEmail>
+        </ProfileSummary>
+
+        <NavList>
+          {MYPAGE_NAV.map((item) => (
+            <NavItem key={item.key} to="/" $active={item.key === "info"}>
+              <NavIcon aria-hidden="true">{item.icon}</NavIcon>
+              {item.label}
+            </NavItem>
+          ))}
+        </NavList>
+      </SidebarWrap>
+
+      <Outlet context={{ member: MOCK_MEMBER, refetch: () => {} }} />
+    </PageWrap>
+  );
+}
+
+function MyPageGallery() {
+  return (
+    <div style={{ marginBottom: "3rem" }}>
+      <h2
+        style={{
+          fontSize: "1.6rem",
+          margin: "0 2.4rem 1.2rem",
+          borderBottom: "1px solid #eee",
+          paddingBottom: "0.6rem",
+        }}
+      >
+        MyPage — /mypage 전체 모양 (mock 데이터, 로그인 불필요)
+      </h2>
+      <Routes>
+        <Route path="/" element={<MyPageShellMock />}>
+          <Route index element={<ProfileEditPage />} />
+        </Route>
+      </Routes>
+    </div>
+  );
+}
+
 export default function Preview() {
   return (
-    <div style={{ maxWidth: "960px", margin: "0 auto", padding: "2.4rem" }}>
-      <h1 style={{ marginBottom: "2rem" }}>Common Components Gallery</h1>
-      <ButtonGallery />
-      <BadgeGallery />
-      <AlertGallery />
-      <InputGallery />
-      <LoadingGallery />
-      <ModalGallery />
-      <PaginationGallery />
-      <TableGallery />
-      <ToastTrigger />
+    <div>
+      <LayoutGallery />
+      <MyPageGallery />
+      <div style={{ maxWidth: "960px", margin: "0 auto", padding: "2.4rem" }}>
+        <h1 style={{ marginBottom: "2rem" }}>Common Components Gallery</h1>
+        <ButtonGallery />
+        <AvatarGallery />
+        <BadgeGallery />
+        <AlertGallery />
+        <InputGallery />
+        <LoadingGallery />
+        <ModalGallery />
+        <PaginationGallery />
+        <TableGallery />
+        <ToastTrigger />
+      </div>
     </div>
   );
 }
