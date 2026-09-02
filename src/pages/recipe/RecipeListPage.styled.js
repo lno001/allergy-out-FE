@@ -60,11 +60,17 @@ export const RecipeGrid = styled.ul`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: ${theme.space.xl};
+
+  /* 그리드 셀(li) 은 행 높이에 맞춰 늘어난다 → 카드가 그 높이를 채우게 함 */
+  li {
+    display: flex;
+  }
 `;
 
 export const RecipeCard = styled(Link)`
   display: flex;
   flex-direction: column;
+  width: 100%;
   background: ${theme.color.bg};
   border: 1px solid ${theme.color.border};
   border-radius: ${theme.radius.lg};
@@ -80,9 +86,12 @@ export const RecipeCard = styled(Link)`
 export const CardThumb = styled.div`
   width: 100%;
   aspect-ratio: 4 / 3;
+  flex-shrink: 0; /* 세로 플렉스에서 눌리지 않게 */
+  overflow: hidden; /* 이미지가 4:3 박스를 뚫고 나오지 않게 */
   background: ${theme.color.gray100}; /* 이미지 로드 실패 시 회색 박스 */
 
   img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -91,6 +100,7 @@ export const CardThumb = styled.div`
 
 export const CardBody = styled.div`
   display: flex;
+  flex: 1; /* 남는 높이를 채워 카드 높이를 행 기준으로 통일 */
   flex-direction: column;
   gap: ${theme.space.sm};
   padding: ${theme.space.lg};

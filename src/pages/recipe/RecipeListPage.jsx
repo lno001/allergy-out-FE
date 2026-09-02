@@ -24,7 +24,7 @@ import {
 } from "./RecipeListPage.styled";
 
 /**
- * RecipeListPage  (route: /recipes)
+ * RecipeListPage  (route: /recipe — App.jsx <Route path="/recipe">)
  * -----------------------------------------------------------------------------
  * 회원·비회원이 레시피(조리법) 게시판에 들어왔을 때 목록을 보여주는 화면.
  * 명세: 조리법 목록 조회 V1.4 — GET /api/recipes?page=&size=
@@ -41,7 +41,8 @@ import {
  * @typedef {Object} RecipeListItem
  * @property {number} recipeNo
  * @property {string} recipeTitle
- * @property {string} recipeMainImg   대표 이미지 URL
+ * @property {string} recipeMainImg    대표 이미지 "원본 파일명" (표시용, src 에 쓰지 않음)
+ * @property {string} recipesImgPath   대표 이미지 S3 URL ← <img src> (= RECIPES_IMG_PATH)
  * @property {string} memberName      작성자 이름
  * @property {string} createDate      "YYYY-MM-DD"
  */
@@ -64,6 +65,9 @@ import {
 
 const PAGE_SIZE = 10; // 한 페이지에 보여줄 레시피 수 (명세 예시 size=10)
 const RECIPE_FORM_PATH = "/recipe/form"; // 조리법 등록 화면
+
+/** 레시피 상세 경로 — App.jsx 의 <Route path="/recipe/:recipeNo"> 와 맞춰야 함 */
+const recipeDetailPath = (recipeNo) => `/recipe/${recipeNo}`;
 
 function RecipeListPage() {
   const [page, setPage] = useState(1); // 화면/Pagination 은 1부터, 서버는 0부터 → 요청 시 -1
@@ -138,10 +142,10 @@ function RecipeListPage() {
             <RecipeGrid>
               {recipes.map((recipe) => (
                 <li key={recipe.recipeNo}>
-                  <RecipeCard to={`/recipes/${recipe.recipeNo}`}>
+                  <RecipeCard to={recipeDetailPath(recipe.recipeNo)}>
                     <CardThumb>
                       <img
-                        src={recipe.recipeMainImg}
+                        src={recipe.recipesImgPath}
                         alt={recipe.recipeTitle}
                         loading="lazy"
                         onError={(e) => {
@@ -162,7 +166,11 @@ function RecipeListPage() {
             </RecipeGrid>
 
             <PaginationWrap>
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
             </PaginationWrap>
           </>
         )}
