@@ -89,8 +89,10 @@ const emptyStep = () => ({ stepInfo: "", stepImg: null, stepImgPreview: "" });
 
 /** 이미지 파일 검사 — 문구는 명세(V1.8) 그대로. 통과 시 null. */
 const validateImageFile = (file) => {
-  if (!IMAGE_MIME_TYPES.includes(file.type)) return "이미지 형식은 PNG, JPG만 지원합니다.";
-  if (file.size > MAX_IMAGE_BYTES) return "이미지 파일은 5MB를 초과할 수 없습니다";
+  if (!IMAGE_MIME_TYPES.includes(file.type))
+    return "이미지 형식은 PNG, JPG만 지원합니다.";
+  if (file.size > MAX_IMAGE_BYTES)
+    return "이미지 파일은 5MB를 초과할 수 없습니다";
   return null;
 };
 
@@ -109,11 +111,19 @@ function RecipeCreatePage() {
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => () => previewUrlsRef.current.forEach(URL.revokeObjectURL), []);
+  // useEffect는 들어올때 실행되는 것으로 알고있었는데 나갈때도 실행됨
+  // 함수를 리턴해서 나갈때 실행되는 코드를 작성
+  // previewIsRef는 미리보기 이미지 URL들을 지워줌
+  useEffect(
+    () => () => previewUrlsRef.current.forEach(URL.revokeObjectURL),
+    [],
+  );
 
   /** 배열 state 의 index 행에서 patch 필드만 갈아끼운다 (재료·단계 공용) */
   const updateRow = (setRows, index, patch) =>
-    setRows((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+    setRows((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    );
 
   /** <input type=file> 에서 이미지 하나 읽어 검증 → { file, url } 또는 null */
   const readImageFile = (event) => {
@@ -241,7 +251,11 @@ function RecipeCreatePage() {
                     aria-label={`${index + 1}번째 재료 이름`}
                     value={material.materialName}
                     maxLength={FIELD_MAX_LENGTH.materialName}
-                    onChange={(e) => updateRow(setMaterials, index, { materialName: e.target.value })}
+                    onChange={(e) =>
+                      updateRow(setMaterials, index, {
+                        materialName: e.target.value,
+                      })
+                    }
                   />
                   <TextInput
                     type="text"
@@ -250,11 +264,15 @@ function RecipeCreatePage() {
                     aria-label={`${index + 1}번째 재료 양`}
                     value={material.amount}
                     maxLength={FIELD_MAX_LENGTH.amount}
-                    onChange={(e) => updateRow(setMaterials, index, { amount: e.target.value })}
+                    onChange={(e) =>
+                      updateRow(setMaterials, index, { amount: e.target.value })
+                    }
                   />
                   <IconButton
                     type="button"
-                    onClick={() => setMaterials((rows) => rows.filter((_, i) => i !== index))}
+                    onClick={() =>
+                      setMaterials((rows) => rows.filter((_, i) => i !== index))
+                    }
                     disabled={materials.length <= 1}
                     aria-label={`${index + 1}번째 재료 삭제`}
                   >
@@ -270,7 +288,8 @@ function RecipeCreatePage() {
               disabled={materials.length >= MAX_LIST_ITEMS}
             >
               + 재료 추가{" "}
-              {materials.length >= MAX_LIST_ITEMS && `(최대 ${MAX_LIST_ITEMS}개)`}
+              {materials.length >= MAX_LIST_ITEMS &&
+                `(최대 ${MAX_LIST_ITEMS}개)`}
             </AddRowButton>
           </Field>
         </SectionCard>
@@ -309,7 +328,10 @@ function RecipeCreatePage() {
                 </PreviewButtonRow>
               </ImagePreviewBox>
             ) : (
-              <ImageDropzone type="button" onClick={() => mainImageInputRef.current?.click()}>
+              <ImageDropzone
+                type="button"
+                onClick={() => mainImageInputRef.current?.click()}
+              >
                 <DropzoneIcon aria-hidden="true">＋</DropzoneIcon>
                 <DropzoneText>클릭하여 대표 이미지 등록</DropzoneText>
                 <DropzoneHint>PNG, JPG · 5MB 이하</DropzoneHint>
@@ -344,7 +366,9 @@ function RecipeCreatePage() {
                     <StepItemTitle>{index + 1}번째 조리 단계</StepItemTitle>
                     <IconButton
                       type="button"
-                      onClick={() => setSteps((rows) => rows.filter((_, i) => i !== index))}
+                      onClick={() =>
+                        setSteps((rows) => rows.filter((_, i) => i !== index))
+                      }
                       disabled={steps.length <= 1}
                       aria-label={`${index + 1}번째 조리 단계 삭제`}
                     >
@@ -359,7 +383,9 @@ function RecipeCreatePage() {
                     aria-label={`${index + 1}번째 조리 과정 설명`}
                     value={step.stepInfo}
                     maxLength={FIELD_MAX_LENGTH.stepInfo}
-                    onChange={(e) => updateRow(setSteps, index, { stepInfo: e.target.value })}
+                    onChange={(e) =>
+                      updateRow(setSteps, index, { stepInfo: e.target.value })
+                    }
                   />
                   <HelperRow>
                     <span />
@@ -377,7 +403,12 @@ function RecipeCreatePage() {
                       <Button
                         variant="dangerOutline"
                         size="sm"
-                        onClick={() => updateRow(setSteps, index, { stepImg: null, stepImgPreview: "" })}
+                        onClick={() =>
+                          updateRow(setSteps, index, {
+                            stepImg: null,
+                            stepImgPreview: "",
+                          })
+                        }
                       >
                         이미지 삭제
                       </Button>
@@ -410,7 +441,8 @@ function RecipeCreatePage() {
               onClick={() => setSteps((rows) => [...rows, emptyStep()])}
               disabled={steps.length >= MAX_LIST_ITEMS}
             >
-              + 조리 단계 추가 {steps.length >= MAX_LIST_ITEMS && `(최대 ${MAX_LIST_ITEMS}개)`}
+              + 조리 단계 추가{" "}
+              {steps.length >= MAX_LIST_ITEMS && `(최대 ${MAX_LIST_ITEMS}개)`}
             </AddRowButton>
           </Field>
         </SectionCard>
