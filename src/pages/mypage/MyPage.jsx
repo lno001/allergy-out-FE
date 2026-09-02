@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Alert from "../../components/common/Alert";
 import Avatar from "../../components/common/Avatar";
 import Loading from "../../components/common/Loading";
+import { useAuth } from "../../hooks/useAuth";
 import useMember from "../../hooks/useMember";
 import {
   NavIcon,
@@ -36,7 +37,10 @@ const NAV_ITEMS = [
  * // TODO(T-5 연동): 회원 전용 라우트라 PrivateRoute가 생기면 그 안으로 옮길 것.
  */
 function MyPage() {
-  const { data: member, isLoading, isError, error, refetch } = useMember();
+  // 인증 부트스트랩(refresh → access 토큰 메모리 적재)이 끝난 뒤에 조회를 시작한다.
+  // isReady 전에 쏘면 토큰 없이 나가 401 → 인터셉터가 또 refresh 하며 부트스트랩과 경합한다.
+  const { isReady } = useAuth();
+  const { data: member, isLoading, isError, error, refetch } = useMember(isReady);
   const { pathname } = useLocation();
 
   if (isLoading) {

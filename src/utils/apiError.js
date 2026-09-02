@@ -19,7 +19,14 @@
  */
 export function splitFormError(err) {
   const data = err?.data;
-  if (data && typeof data === "object" && !Array.isArray(data)) {
+  // 필드 맵이 실제로 키를 가질 때만 인라인 처리. 빈 객체({})거나 없으면
+  // msg 를 폼 전체 메시지로 → "실패했는데 화면엔 아무것도 안 뜨는" 상황 방지.
+  if (
+    data &&
+    typeof data === "object" &&
+    !Array.isArray(data) &&
+    Object.keys(data).length > 0
+  ) {
     return { fieldErrors: data, formMessage: null };
   }
   return {
