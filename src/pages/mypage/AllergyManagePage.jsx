@@ -63,6 +63,18 @@ function AllergyManagePage() {
     if (result.msg) showToast(result.msg, result.ok ? "success" : "danger");
   };
 
+  /** "계통 통째" 버튼 전용 — 이미 전부 등록돼 있으면 한 번 더 눌렀을 때 전체 해제(토글) */
+  const handleCategoryToggle = (bundle) => {
+    const allSelected = bundle.items.every((item) => selected.has(item));
+    if (allSelected) {
+      removeMany(bundle.items);
+      return;
+    }
+    handleQuickAdd(bundle.items);
+  };
+
+  const isCategorySelected = (bundle) => bundle.items.every((item) => selected.has(item));
+
   /** 메인 목록 체크박스 클릭 — 하위 품목이 있는 항목(알류/조개류)은 그 품목 전체를 토글 */
   const handleOptionToggle = (option) => {
     const subItems = ALLERGEN_SUB_ITEMS[option];
@@ -129,8 +141,13 @@ function AllergyManagePage() {
           <QuickAddGroupLabel>계통 통째</QuickAddGroupLabel>
           <QuickAddRow>
             {CATEGORY_BUNDLES.map((bundle) => (
-              <QuickAddButton key={bundle.label} type="button" onClick={() => handleQuickAdd(bundle.items)}>
-                + {bundle.label}
+              <QuickAddButton
+                key={bundle.label}
+                type="button"
+                $active={isCategorySelected(bundle)}
+                onClick={() => handleCategoryToggle(bundle)}
+              >
+                {isCategorySelected(bundle) ? "✓" : "+"} {bundle.label}
               </QuickAddButton>
             ))}
           </QuickAddRow>

@@ -133,6 +133,13 @@ export const QuickAddButton = styled.button`
     background-color: ${theme.color.primary50};
     border-color: ${theme.color.primary};
   }
+
+  /* 계통 통째 버튼 — 하위 품목이 전부 등록돼 있으면 눌린 상태로 표시(다시 누르면 전체 해제) */
+  ${({ $active }) => $active && `
+    background-color: ${theme.color.primary};
+    border-color: ${theme.color.primary};
+    color: ${theme.color.textOnPrimary};
+  `}
 `;
 
 export const OptionGrid = styled.div`
