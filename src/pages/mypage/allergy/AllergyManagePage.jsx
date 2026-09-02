@@ -1,11 +1,11 @@
 import { useContext, useState } from "react";
 
-import Alert from "../../components/common/Alert";
-import Button from "../../components/common/Button";
-import Input from "../../components/common/Input";
-import Loading from "../../components/common/Loading";
-import { ToastContext } from "../../components/common/ToastProvider";
-import { MAX_ALLERGY_COUNT, useAllergyProfile } from "../../hooks/useAllergyProfile";
+import Alert from "../../../components/common/Alert";
+import Button from "../../../components/common/Button";
+import Input from "../../../components/common/Input";
+import Loading from "../../../components/common/Loading";
+import { ToastContext } from "../../../components/common/ToastProvider";
+import { MAX_ALLERGY_COUNT, useAllergyProfile } from "../../../hooks/useAllergyProfile";
 import { ALLERGY_OPTIONS } from "./allergyOptions";
 import {
   AddRow,
@@ -28,18 +28,17 @@ import {
   SectionLabel,
   SectionTitle,
 } from "./AllergyManagePage.styled";
-import { ALLERGEN_SUB_ITEMS, CATEGORY_BUNDLES, QUICK_BUNDLES, QUICK_SINGLE_ITEMS } from "./allergyQuickAdd";
+import { CATEGORY_BUNDLES, QUICK_BUNDLES } from "./allergyQuickAdd";
 
 /**
  * 마이페이지 > 알러지 필터 관리 (/mypage/allergy)
  * ProfileEditPage와 같은 CardWrap/SectionTitle/SectionDivider 패턴을 써서
  * 마이페이지의 다른 탭과 같은 카드 하나로 보이게 한다(개별 Card로 안 쪼갬).
- * - "빠른 추가": 묶음(5대 알러지 등)/계통(갑각류 등)/개별 항목을 버튼 한 번으로 추가
  * - "알러지 직접 추가": 목록에 없는 재료를 자유 입력으로 추가
+ * - "빠른 추가": 묶음(5대 알러지 등)/계통 통째(갑각류·조개류·알류)를 버튼 한 번으로 추가.
+ *   둘 다 토글 방식 — 이미 전부 등록돼 있으면 다시 눌렀을 때 전체 해제.
  * - "현재 등록된 필터": 지금 선택된 전체 목록 칩으로 요약, X로 제거
- * - "전체 알러지 항목": 식약처 표시대상 원재료 18종 체크박스.
- *   이 중 "알류"/"조개류"는 그 자체가 아니라 하위 구체 품목 전체(ALLERGEN_SUB_ITEMS)가
- *   체크/저장된다 — 체크박스 상태도 하위 품목이 전부 selected일 때만 checked로 표시.
+ * - "알레르기 의무표시 대상": 식약처 표시대상 원재료 체크박스.
  * "필터 저장하기"를 누르면 위 전체(칩에 보이는 것 전부)를 서버에 저장한다
  * (PATCH /api/members/allergy, 전체 교체).
  */
@@ -65,8 +64,8 @@ function AllergyManagePage() {
     if (result.msg) showToast(result.msg, result.ok ? "success" : "danger");
   };
 
-  /** "계통 통째" 버튼 전용 — 이미 전부 등록돼 있으면 한 번 더 눌렀을 때 전체 해제(토글) */
-  const handleCategoryToggle = (bundle) => {
+  /** "묶음"/"계통 통째" 버튼 공용 — 이미 전부 등록돼 있으면 한 번 더 눌렀을 때 전체 해제(토글) */
+  const handleBundleToggle = (bundle) => {
     const allSelected = bundle.items.every((item) => selected.has(item));
     if (allSelected) {
       removeMany(bundle.items);
@@ -75,28 +74,11 @@ function AllergyManagePage() {
     handleQuickAdd(bundle.items);
   };
 
-  const isCategorySelected = (bundle) => bundle.items.every((item) => selected.has(item));
+  const isBundleSelected = (bundle) => bundle.items.every((item) => selected.has(item));
 
-  /** 메인 목록 체크박스 클릭 — 하위 품목이 있는 항목(알류/조개류)은 그 품목 전체를 토글 */
   const handleOptionToggle = (option) => {
-    const subItems = ALLERGEN_SUB_ITEMS[option];
-    if (!subItems) {
-      const result = toggle(option);
-      if (!result.ok) showToast(result.msg, "danger");
-      return;
-    }
-    const allSelected = subItems.every((item) => selected.has(item));
-    if (allSelected) {
-      removeMany(subItems);
-      return;
-    }
-    const result = addMany(subItems);
-    if (result.msg) showToast(result.msg, result.ok ? "success" : "danger");
-  };
-
-  const isOptionChecked = (option) => {
-    const subItems = ALLERGEN_SUB_ITEMS[option];
-    return subItems ? subItems.every((item) => selected.has(item)) : selected.has(option);
+    const result = toggle(option);
+    if (!result.ok) showToast(result.msg, "danger");
   };
 
   const handleSave = async () => {
@@ -131,14 +113,33 @@ function AllergyManagePage() {
 
       <SectionDivider />
       <Section>
+        <SectionLabel>알러지 직접 추가</SectionLabel>
+        <AddRow onSubmit={handleAddCustom}>
+          <Input
+            placeholder="재료명을 입력하세요 (예: 아보카도)"
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            maxLength={30}
+          />
+          <Button type="submit">추가</Button>
+        </AddRow>
+      </Section>
+
+      <SectionDivider />
+      <Section>
         <SectionLabel>빠른 추가</SectionLabel>
 
         <QuickAddGroup>
           <QuickAddGroupLabel>묶음</QuickAddGroupLabel>
           <QuickAddRow>
             {QUICK_BUNDLES.map((bundle) => (
-              <QuickAddButton key={bundle.label} type="button" onClick={() => handleQuickAdd(bundle.items)}>
-                + {bundle.label}
+              <QuickAddButton
+                key={bundle.label}
+                type="button"
+                $active={isBundleSelected(bundle)}
+                onClick={() => handleBundleToggle(bundle)}
+              >
+                {isBundleSelected(bundle) ? "✓" : "+"} {bundle.label}
               </QuickAddButton>
             ))}
           </QuickAddRow>
@@ -151,39 +152,14 @@ function AllergyManagePage() {
               <QuickAddButton
                 key={bundle.label}
                 type="button"
-                $active={isCategorySelected(bundle)}
-                onClick={() => handleCategoryToggle(bundle)}
+                $active={isBundleSelected(bundle)}
+                onClick={() => handleBundleToggle(bundle)}
               >
-                {isCategorySelected(bundle) ? "✓" : "+"} {bundle.label}
+                {isBundleSelected(bundle) ? "✓" : "+"} {bundle.label}
               </QuickAddButton>
             ))}
           </QuickAddRow>
         </QuickAddGroup>
-
-        <QuickAddGroup>
-          <QuickAddGroupLabel>개별 항목</QuickAddGroupLabel>
-          <QuickAddRow>
-            {QUICK_SINGLE_ITEMS.map((item) => (
-              <QuickAddButton key={item} type="button" onClick={() => handleQuickAdd([item])}>
-                + {item}
-              </QuickAddButton>
-            ))}
-          </QuickAddRow>
-        </QuickAddGroup>
-      </Section>
-
-      <SectionDivider />
-      <Section>
-        <SectionLabel>알러지 직접 추가</SectionLabel>
-        <AddRow onSubmit={handleAddCustom}>
-          <Input
-            placeholder="재료명을 입력하세요 (예: 아보카도)"
-            value={customInput}
-            onChange={(e) => setCustomInput(e.target.value)}
-            maxLength={30}
-          />
-          <Button type="submit">추가</Button>
-        </AddRow>
       </Section>
 
       <SectionDivider />
@@ -211,12 +187,12 @@ function AllergyManagePage() {
 
       <SectionDivider />
       <Section>
-        <SectionLabel>전체 알러지 항목</SectionLabel>
+        <SectionLabel>알레르기 의무표시 대상</SectionLabel>
         <OptionGrid role="group" aria-label="알러지 유발 재료 목록">
           {ALLERGY_OPTIONS.map((option) => (
             <OptionLabel key={option}>
               <OptionCheckbox
-                checked={isOptionChecked(option)}
+                checked={selected.has(option)}
                 onChange={() => handleOptionToggle(option)}
               />
               {option}

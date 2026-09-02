@@ -1,6 +1,6 @@
 import styled from "styled-components";
 
-import { theme } from "../../styles/theme";
+import { theme } from "../../../styles/theme";
 
 /* ProfileEditPage.styled.js의 CardWrap/SectionTitle/SectionDescription/SectionDivider와
    동일한 값을 그대로 씀 — 마이페이지 다른 탭이랑 이질감 없게 통일. */
