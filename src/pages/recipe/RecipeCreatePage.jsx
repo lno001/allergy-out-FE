@@ -113,7 +113,7 @@ function RecipeCreatePage() {
 
   // useEffect는 들어올때 실행되는 것으로 알고있었는데 나갈때도 실행됨
   // 함수를 리턴해서 나갈때 실행되는 코드를 작성
-  // previewIsRef는 미리보기 이미지 URL들을 지워줌
+  // previewIsRef는 미리보기 이미지 URL들을 지워줌.
   useEffect(
     () => () => previewUrlsRef.current.forEach(URL.revokeObjectURL),
     [],
