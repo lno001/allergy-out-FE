@@ -253,11 +253,19 @@ function LayoutGallery() {
       <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
         <Header user={null} />
         <Header
-          user={{ memberName: "김민지", role: "ROLE_USER", memberImgPath: null }}
+          user={{
+            memberName: "김민지",
+            role: "ROLE_USER",
+            memberImgPath: null,
+          }}
           onLogout={() => console.log("로그아웃 클릭 (프리뷰 mock)")}
         />
         <Header
-          user={{ memberName: "관리자", role: "ROLE_ADMIN", memberImgPath: null }}
+          user={{
+            memberName: "관리자",
+            role: "ROLE_ADMIN",
+            memberImgPath: null,
+          }}
           onLogout={() => console.log("로그아웃 클릭 (프리뷰 mock)")}
         />
         <Footer />
@@ -422,7 +430,8 @@ function LoginTester() {
             로그아웃
           </Button>
           <p style={{ fontSize: "1.3rem", color: "#666" }}>
-            이제 <a href="/mypage">/mypage</a> 로 이동하면 실제 데이터로 렌더됩니다.
+            이제 <a href="/mypage">/mypage</a> 로 이동하면 실제 데이터로
+            렌더됩니다.
           </p>
         </div>
       ) : (
@@ -450,7 +459,11 @@ function LoginTester() {
             error={error}
             autoComplete="current-password"
           />
-          <Button type="submit" loading={submitting} disabled={!memberId || !memberPwd}>
+          <Button
+            type="submit"
+            loading={submitting}
+            disabled={!memberId || !memberPwd}
+          >
             로그인
           </Button>
         </form>
