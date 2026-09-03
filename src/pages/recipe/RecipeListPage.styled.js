@@ -56,42 +56,7 @@ export const SearchInput = styled.input`
   }
 `;
 
-/* ---- 적용된 필터 chip (제외 재료) ---- */
-
-export const ActiveFilterRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${theme.space.sm};
-  margin-bottom: ${theme.space.xl};
-`;
-
-export const FilterChip = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${theme.space.xs};
-  padding: ${theme.space.xs} ${theme.space.sm} ${theme.space.xs} ${theme.space.md};
-  font-size: ${theme.fontSize.sm};
-  color: ${theme.color.primary700};
-  background: ${theme.color.primary50};
-  border: 1px solid ${theme.color.primary200};
-  border-radius: ${theme.radius.full};
-`;
-
-export const ChipRemove = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  font-size: ${theme.fontSize.xs};
-  color: ${theme.color.primary700};
-  border-radius: ${theme.radius.full};
-  transition: background ${theme.transition.fast};
-
-  &:hover {
-    background: ${theme.color.primary100};
-  }
-`;
+/* 적용된 제외 재료는 목록에 표시하지 않는다 — "필터 (N)" 버튼 카운트로만. 변경은 모달에서. */
 
 /* ---- 목록 상태 영역 ---- */
 
