@@ -6,7 +6,7 @@ import Input from "../../../components/common/Input";
 import Loading from "../../../components/common/Loading";
 import { ToastContext } from "../../../components/common/ToastProvider";
 import { MAX_ALLERGY_COUNT, useAllergyProfile } from "../../../hooks/useAllergyProfile";
-import { ALLERGY_OPTIONS } from "./allergyOptions";
+import { ALLERGEN_CATEGORIES, ALLERGEN_TAXONOMY } from "../../../constants/allergens";
 import {
   AddRow,
   CardWrap,
@@ -16,8 +16,14 @@ import {
   ChipRow,
   FooterRow,
   OptionCheckbox,
+  OptionExpandButton,
   OptionGrid,
+  OptionItem,
   OptionLabel,
+  OptionRow,
+  OptionSubCheckbox,
+  OptionSubLabel,
+  OptionSubList,
   QuickAddButton,
   QuickAddGroup,
   QuickAddGroupLabel,
@@ -28,17 +34,19 @@ import {
   SectionLabel,
   SectionTitle,
 } from "./AllergyManagePage.styled";
-import { CATEGORY_BUNDLES, QUICK_BUNDLES } from "./allergyQuickAdd";
+import { QUICK_BUNDLES } from "./allergyQuickAdd";
 
 /**
  * 마이페이지 > 알러지 필터 관리 (/mypage/allergy)
  * ProfileEditPage와 같은 CardWrap/SectionTitle/SectionDivider 패턴을 써서
  * 마이페이지의 다른 탭과 같은 카드 하나로 보이게 한다(개별 Card로 안 쪼갬).
  * - "알러지 직접 추가": 목록에 없는 재료를 자유 입력으로 추가
- * - "빠른 추가": 묶음(5대 알러지 등)/계통 통째(갑각류·조개류·알류)를 버튼 한 번으로 추가.
- *   둘 다 토글 방식 — 이미 전부 등록돼 있으면 다시 눌렀을 때 전체 해제.
+ * - "빠른 추가 > 묶음": 5대 알러지 등 여러 재료를 버튼 한 번으로 추가/해제(토글)
  * - "현재 등록된 필터": 지금 선택된 전체 목록 칩으로 요약, X로 제거
- * - "알레르기 의무표시 대상": 식약처 표시대상 원재료 체크박스.
+ * - "알레르기 의무표시 대상": constants/allergens.js의 ALLERGEN_TAXONOMY(식약처 19분류) 체크박스.
+ *   하위 품목이 있는 분류(우유·밀·돼지고기 등)는 체크하면 하위 품목 전체가 인라인으로 펼쳐지며
+ *   전부 선택되고(실제 저장은 하위 품목명으로), 펼침 버튼(▸/▾)으로 개별 조정도 가능.
+ *   하위 품목이 그 자체뿐인 분류(호두·잣·고등어)는 일반 체크박스로 동작.
  * "필터 저장하기"를 누르면 위 전체(칩에 보이는 것 전부)를 서버에 저장한다
  * (PATCH /api/members/allergy, 전체 교체).
  */
@@ -48,6 +56,7 @@ function AllergyManagePage() {
     selected, toggle, addCustom, addMany, remove, removeMany, save, isLoading, isSaving, error,
   } = useAllergyProfile();
   const [customInput, setCustomInput] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState(() => new Set());
 
   const handleAddCustom = (e) => {
     e.preventDefault();
@@ -64,7 +73,7 @@ function AllergyManagePage() {
     if (result.msg) showToast(result.msg, result.ok ? "success" : "danger");
   };
 
-  /** "묶음"/"계통 통째" 버튼 공용 — 이미 전부 등록돼 있으면 한 번 더 눌렀을 때 전체 해제(토글) */
+  /** "묶음" 버튼 전용 — 이미 전부 등록돼 있으면 한 번 더 눌렀을 때 전체 해제(토글) */
   const handleBundleToggle = (bundle) => {
     const allSelected = bundle.items.every((item) => selected.has(item));
     if (allSelected) {
@@ -76,8 +85,45 @@ function AllergyManagePage() {
 
   const isBundleSelected = (bundle) => bundle.items.every((item) => selected.has(item));
 
-  const handleOptionToggle = (option) => {
-    const result = toggle(option);
+  /** 하위 품목이 그 분류명 자체뿐이면(호두→["호두"]) 펼칠 게 없어 일반 체크박스로 취급 */
+  const hasSubItems = (category) => {
+    const items = ALLERGEN_TAXONOMY[category];
+    return items.length > 1 || items[0] !== category;
+  };
+
+  const isCategorySelected = (category) => {
+    if (!hasSubItems(category)) return selected.has(category);
+    return ALLERGEN_TAXONOMY[category].every((item) => selected.has(item));
+  };
+
+  const setExpanded = (category, expand) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (expand) next.add(category); else next.delete(category);
+      return next;
+    });
+  };
+
+  /** 분류 체크박스 — 하위 품목이 있으면 전체 추가/해제(토글) + 펼치기, 없으면 그 자체를 토글 */
+  const handleCategoryToggle = (category) => {
+    if (!hasSubItems(category)) {
+      const result = toggle(category);
+      if (!result.ok) showToast(result.msg, "danger");
+      return;
+    }
+    const items = ALLERGEN_TAXONOMY[category];
+    if (isCategorySelected(category)) {
+      removeMany(items);
+      setExpanded(category, false);
+    } else {
+      const result = addMany(items);
+      if (result.msg) showToast(result.msg, result.ok ? "success" : "danger");
+      setExpanded(category, true);
+    }
+  };
+
+  const handleSubItemToggle = (item) => {
+    const result = toggle(item);
     if (!result.ok) showToast(result.msg, "danger");
   };
 
@@ -144,22 +190,6 @@ function AllergyManagePage() {
             ))}
           </QuickAddRow>
         </QuickAddGroup>
-
-        <QuickAddGroup>
-          <QuickAddGroupLabel>계통 통째</QuickAddGroupLabel>
-          <QuickAddRow>
-            {CATEGORY_BUNDLES.map((bundle) => (
-              <QuickAddButton
-                key={bundle.label}
-                type="button"
-                $active={isBundleSelected(bundle)}
-                onClick={() => handleBundleToggle(bundle)}
-              >
-                {isBundleSelected(bundle) ? "✓" : "+"} {bundle.label}
-              </QuickAddButton>
-            ))}
-          </QuickAddRow>
-        </QuickAddGroup>
       </Section>
 
       <SectionDivider />
@@ -189,15 +219,46 @@ function AllergyManagePage() {
       <Section>
         <SectionLabel>알레르기 의무표시 대상</SectionLabel>
         <OptionGrid role="group" aria-label="알러지 유발 재료 목록">
-          {ALLERGY_OPTIONS.map((option) => (
-            <OptionLabel key={option}>
-              <OptionCheckbox
-                checked={selected.has(option)}
-                onChange={() => handleOptionToggle(option)}
-              />
-              {option}
-            </OptionLabel>
-          ))}
+          {ALLERGEN_CATEGORIES.map((category) => {
+            const withSub = hasSubItems(category);
+            const isExpanded = expandedCategories.has(category);
+            return (
+              <OptionItem key={category}>
+                <OptionRow>
+                  <OptionLabel>
+                    <OptionCheckbox
+                      checked={isCategorySelected(category)}
+                      onChange={() => handleCategoryToggle(category)}
+                    />
+                    {category}
+                  </OptionLabel>
+                  {withSub && (
+                    <OptionExpandButton
+                      type="button"
+                      aria-label={`${category} 하위 품목 ${isExpanded ? "접기" : "펼치기"}`}
+                      onClick={() => setExpanded(category, !isExpanded)}
+                    >
+                      {isExpanded ? "▾" : "▸"}
+                    </OptionExpandButton>
+                  )}
+                </OptionRow>
+
+                {withSub && isExpanded && (
+                  <OptionSubList>
+                    {ALLERGEN_TAXONOMY[category].map((item) => (
+                      <OptionSubLabel key={item}>
+                        <OptionSubCheckbox
+                          checked={selected.has(item)}
+                          onChange={() => handleSubItemToggle(item)}
+                        />
+                        {item}
+                      </OptionSubLabel>
+                    ))}
+                  </OptionSubList>
+                )}
+              </OptionItem>
+            );
+          })}
         </OptionGrid>
       </Section>
 

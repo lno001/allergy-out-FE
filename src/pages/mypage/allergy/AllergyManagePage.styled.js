@@ -135,7 +135,7 @@ export const QuickAddButton = styled.button`
     border-color: ${theme.color.primary};
   }
 
-  /* 계통 통째 버튼 — 하위 품목이 전부 등록돼 있으면 눌린 상태로 표시(다시 누르면 전체 해제) */
+  /* 묶음 버튼 — 항목이 전부 등록돼 있으면 눌린 상태로 표시(다시 누르면 전체 해제) */
   ${({ $active }) => $active && `
     background-color: ${theme.color.primary};
     border-color: ${theme.color.primary};
@@ -143,16 +143,32 @@ export const QuickAddButton = styled.button`
   `}
 `;
 
+/* grid 대신 flex-wrap + align-items:flex-start — 하위 품목이 펼쳐져 항목마다 높이가
+   달라져도(밀 17개 vs 잣 1개) 같은 줄의 다른 항목까지 억지로 늘어나지 않게 함. */
 export const OptionGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: ${theme.space.sm};
+`;
+
+export const OptionItem = styled.div`
+  flex: 1 1 200px;
+  min-width: 200px;
+`;
+
+export const OptionRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.space.xs};
 `;
 
 export const OptionLabel = styled.label`
   display: flex;
   align-items: center;
   gap: ${theme.space.sm};
+  flex: 1;
+  min-width: 0;
   padding: ${theme.space.sm} ${theme.space.md};
   border-radius: ${theme.radius.md};
   cursor: pointer;
@@ -168,6 +184,57 @@ export const OptionLabel = styled.label`
 export const OptionCheckbox = styled.input.attrs({ type: "checkbox" })`
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
+  accent-color: ${theme.color.primary};
+  cursor: pointer;
+`;
+
+/* 하위 품목 있는 항목만 붙는 펼치기/접기 버튼 (▸/▾) */
+export const OptionExpandButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: ${theme.radius.md};
+  color: ${theme.color.sub};
+  font-size: ${theme.fontSize.sm};
+  transition: background-color ${theme.transition.fast};
+
+  &:hover {
+    background-color: ${theme.color.bgSoft};
+    color: ${theme.color.text};
+  }
+`;
+
+export const OptionSubList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: ${theme.space.xs} 0 ${theme.space.xs} ${theme.space.xl};
+`;
+
+export const OptionSubLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: ${theme.space.xs};
+  padding: 2px ${theme.space.sm};
+  border-radius: ${theme.radius.sm};
+  cursor: pointer;
+  font-size: ${theme.fontSize.sm};
+  color: ${theme.color.sub};
+  transition: background-color ${theme.transition.fast};
+
+  &:hover {
+    background-color: ${theme.color.bgSoft};
+    color: ${theme.color.text};
+  }
+`;
+
+export const OptionSubCheckbox = styled.input.attrs({ type: "checkbox" })`
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
   accent-color: ${theme.color.primary};
   cursor: pointer;
