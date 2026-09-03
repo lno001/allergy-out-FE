@@ -60,6 +60,7 @@ function Header({ user = null, onLogout }) {
         {!user && (
           <Nav>
             <NavItem to="/login">로그인</NavItem>
+            <NavItem to="/recipe">레시피 조회</NavItem>
             <Button size="sm" onClick={() => navigate("/signup")}>
               회원가입
             </Button>
@@ -70,8 +71,13 @@ function Header({ user = null, onLogout }) {
           <Nav>
             <NavItem to="/allergy-info">알러지 정보</NavItem>
             <NavItem to="/mypage">마이페이지</NavItem>
+            <NavItem to="/recipe">레시피 조회</NavItem>
             <UserBadge>
-              <Avatar name={user.memberName} src={user.memberImgPath} size="sm" />
+              <Avatar
+                name={user.memberName}
+                src={user.memberImgPath}
+                size="sm"
+              />
               <UserName>{user.memberName} 님</UserName>
             </UserBadge>
             <LogoutButton type="button" onClick={onLogout}>

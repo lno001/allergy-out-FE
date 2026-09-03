@@ -8,10 +8,11 @@
  * key   = 식약처 고시상 표시 대상 분류명 (그대로 사용)
  * value = 그 분류에 해당하는 재료명 문자열 목록 — 레시피 재료(MATERIAL_NAME) 매칭,
  *         회원 알러지 등록(MEMBER_ALLERGY.MATERIAL_NAME) 저장값으로 함께 사용.
+ *         문자열은 공백 없이 정규화된 형태로 둔다 (등록·MEMBER_ALLERGY 저장 시에도 동일 정규화 전제).
  *
- * recipe-filter 브랜치(PR #34)에서 먼저 만든 목록을 그대로 가져옴 — 마이페이지
- * 알러지 등록 화면(allergy)과 레시피 필터 화면(recipe) 양쪽에서 같은 분류를 쓰도록
- * 2026-09-02에 공용 위치(src/constants)로 채택. 문자열은 전부 NVARCHAR2(30) 이내.
+ * recipe-filter 브랜치(PR #34)에서 먼저 만든 목록을 마이페이지 알러지 담당(승현 님)이
+ * 리뷰 후 그대로 채택 — 알러지 등록 화면(allergy)과 레시피 필터 화면(recipe) 양쪽에서
+ * 같은 분류를 쓰도록 2026-09-02에 공용 위치(src/constants)로 옮김. 문자열은 전부 NVARCHAR2(30) 이내.
  */
 
 /** @type {Record<string, string[]>} */

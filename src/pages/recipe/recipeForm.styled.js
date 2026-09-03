@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { theme } from "../../styles/theme";
 
 /**
- * RecipeCreatePage 전용 styled 컴포넌트.
+ * 레시피 등록/수정 폼 공용 styled 컴포넌트 (RecipeCreatePage · RecipeEditPage).
  * -----------------------------------------------------------------------------
  * - 색 · 간격 · 폰트 · radius · shadow 는 theme 토큰만 사용한다 (CLAUDE.md 2.[스타일]).
  * - 검증 에러 표시는 브라우저 네이티브(:user-invalid)에 맡긴다 — 별도 $hasError prop 없음.
@@ -264,6 +264,26 @@ export const ImagePreviewBox = styled.div`
 export const PreviewButtonRow = styled.div`
   display: flex;
   gap: ${theme.space.sm};
+`;
+
+/* 미리보기 위 "변경" 버튼 — label 로 hidden file input 을 감싸 파일 피커를 연다 (ref 불필요) */
+export const ImageChangeButton = styled.label`
+  display: inline-flex;
+  align-items: center;
+  padding: ${theme.space.xs} ${theme.space.md};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  color: ${theme.color.text};
+  background: ${theme.color.white};
+  border: 1px solid ${theme.color.border};
+  border-radius: ${theme.radius.md};
+  cursor: pointer;
+  transition: background ${theme.transition.fast}, border-color ${theme.transition.fast};
+
+  &:hover {
+    background: ${theme.color.bgSoft};
+    border-color: ${theme.color.gray400};
+  }
 `;
 
 export const StepList = styled.div`
