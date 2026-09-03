@@ -31,7 +31,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        await refresh();
+        const accessToken = await refresh();
+        if (!accessToken) {
+          setUser(null);
+          return;
+        }
         const meRes = await getMe();
         setUser(toUser(meRes.data));
       } catch {
