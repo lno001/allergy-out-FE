@@ -8,6 +8,9 @@ import AllergyManagePage from "./pages/mypage/AllergyManagePage";
 import MyPage from "./pages/mypage/MyPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import RecipeCreatePage from "./pages/recipe/RecipeCreatePage";
+import RecipeEditPage from "./pages/recipe/RecipeEditPage";
+import RecipeListPage from "./pages/recipe/RecipeListPage";
+import RecipeDetailPage from "./pages/recipe/RecipeDetailPage";
 
 function App() {
   return (
@@ -16,7 +19,10 @@ function App() {
         <Route path="/" element={<Preview />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/recipe" element={<RecipeCreatePage />} />
+        <Route path="/recipe/form" element={<RecipeCreatePage />} />
+        <Route path="/recipe" element={<RecipeListPage />} />
+        <Route path="/recipe/:recipeNo/edit" element={<RecipeEditPage />} />
+        <Route path="/recipe/:recipeNo" element={<RecipeDetailPage />} />
         <Route path="/mypage" element={<MyPage />}>
           <Route index element={<ProfileEditPage />} />
           <Route path="allergy" element={<AllergyManagePage />} />
