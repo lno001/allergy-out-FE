@@ -5,6 +5,7 @@ import SignupPage from "./pages/auth/SignupPage";
 import Layout from "./components/layout/Layout";
 import Preview from "./preview";
 import AllergyManagePage from "./pages/mypage/AllergyManagePage";
+import BookmarkListPage from "./pages/mypage/BookmarkListPage";
 import MyPage from "./pages/mypage/MyPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import RecipeCreatePage from "./pages/recipe/RecipeCreatePage";
@@ -26,6 +27,7 @@ function App() {
         <Route path="/mypage" element={<MyPage />}>
           <Route index element={<ProfileEditPage />} />
           <Route path="allergy" element={<AllergyManagePage />} />
+          <Route path="bookmark" element={<BookmarkListPage />} />
         </Route>
         <Route path="*" element={<Preview />} />
       </Route>
