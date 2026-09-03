@@ -1,17 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Alert from "../../components/common/Alert";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
-import { getRecipeList } from "../../apis/recipeApi";
+import { getFilteredRecipes } from "../../apis/recipeApi";
+import FilterModal from "./FilterModal";
 import {
   PageWrapper,
   TopRow,
   FilterRow,
   SearchForm,
   SearchInput,
+  ActiveFilterRow,
+  FilterChip,
+  ChipRemove,
   ContentArea,
   RecipeGrid,
   RecipeCard,
@@ -28,16 +32,17 @@ import {
  * RecipeListPage  (route: /recipe — App.jsx <Route path="/recipe">)
  * -----------------------------------------------------------------------------
  * 회원·비회원이 레시피(조리법) 게시판에 들어왔을 때 목록을 보여주는 화면.
- * 명세: 조리법 목록 조회 V1.4 + 조리법 목록 키워드 조회 V1.3
- *      — GET /api/recipes?page=&size=&keyword=
+ * 조회는 GET /api/recipes/filter 하나로 통일 — 검색어(keyword) + 알레르기 제외
+ * 필터(excludeMaterials) + 페이지네이션을 한 번에 받는다.
  *
- * - 인증: 회원이면 토큰이 자동 첨부되어 백엔드가 알러지 재료를 뺀 목록을 준다.
+ * - 인증: 회원이면 토큰이 자동 첨부되어 백엔드가 본인 알러지 재료를 뺀 목록을 준다.
  *   비회원이면 전체 목록. 프론트는 동일하게 호출만 하고 분기하지 않는다.
- * - 검색: 검색창에 키워드를 넣고 "검색" 버튼(또는 엔터) → keyword 파라미터로 전달.
- *   keyword 가 비어 있으면 파라미터를 빼서 전체 조회와 동일하게 동작한다(스펙).
- *   실시간 검색이 아니라 submit 시점에만 요청 → 입력용 keyword 와
- *   "확정된 검색어" appliedKeyword 를 분리해 둔다.
- * - "필터 변경" 은 아직 명세에 필터 파라미터가 없어 비활성 UI 로 남겨둔다.
+ * - 검색: 검색창 + "검색" 버튼(또는 엔터). keyword 가 비면 파라미터를 빼서 전체 조회.
+ * - 필터: "필터" 버튼 → FilterModal 에서 제외할 재료명을 고르고 "적용하기".
+ *   선택된 재료는 목록 상단에 chip 으로 표시하고 개별 제거 가능.
+ * - 실시간이 아니라 submit·페이지 이동·필터 적용 시점에 loadRecipes(page, keyword,
+ *   excludeMaterials) 를 그때 값으로 직접 호출한다. (검색어는 별도 state 로 안 들고,
+ *   제외 재료 목록만 적용된 상태라 state 로 유지한다.)
  * - 헤더/푸터는 components/layout 담당. 라우트 등록(App.jsx)은 이번 범위 아님.
  * - props 없음 → @typedef(props) 두지 않음 (CLAUDE.md 2.[작명]).
  */
@@ -63,7 +68,7 @@ import {
 
 /**
  * @typedef {Object} RecipeListResponse
- * GET /api/recipes 성공 응답의 data (명세 조리법 목록 조회 V1.4)
+ * GET /api/recipes/filter 성공 응답의 data
  * @property {RecipeListItem[]} recipes
  * @property {PageInfo}         pageInfo
  */
@@ -77,49 +82,82 @@ const recipeDetailPath = (recipeNo) => `/recipe/${recipeNo}`;
 function RecipeListPage() {
   const [page, setPage] = useState(1); // 화면/Pagination 은 1부터, 서버는 0부터 → 요청 시 -1
   const [keyword, setKeyword] = useState(""); // 검색창에 입력 중인 값 (controlled input)
-  const [appliedKeyword, setAppliedKeyword] = useState(""); // 검색 버튼/엔터로 확정된 검색어 → 실제 요청에 사용
+  const [excludeMaterials, setExcludeMaterials] = useState(
+    /** @type {string[]} */ ([]),
+  ); // 필터 모달에서 "적용" 한 제외 재료명 (적용된 상태라 state 유지)
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [recipes, setRecipes] = useState(/** @type {RecipeListItem[]} */ ([]));
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // 요청 순번 — 페이지를 빠르게 연타할 때 늦게 도착한 이전 응답이 최신 화면을 덮어쓰지 않게 함
+  const requestIdRef = useRef(0);
+
+  /**
+   * 레시피 목록 조회. page(1부터)·keyword·excludeMaterials 를 인자로 직접 받아 호출한다.
+   * 검색어를 state 로 안 들고 인자로 넘기는 이유: 조회 시점 값을 그대로 쓰면
+   * "state 변경 → 리렌더 → useEffect" 사이클 없이 바로 요청할 수 있어서.
+   */
+  const loadRecipes = async (targetPage, targetKeyword, targetExcludes) => {
+    const requestId = ++requestIdRef.current;
+    setIsLoading(true);
+    setError("");
+    try {
+      const params = { page: targetPage - 1, size: PAGE_SIZE };
+      const trimmed = targetKeyword.trim();
+      if (trimmed) params.keyword = trimmed; // 비면 생략 → 제목 필터 없음
+      if (targetExcludes.length) params.excludeMaterials = targetExcludes.join(","); // 콤마 1개로 이어 보냄
+
+      const res = await getFilteredRecipes(params);
+      if (requestId !== requestIdRef.current) return; // 더 최근 요청이 있으면 이 응답은 버림
+      /** @type {RecipeListResponse} */
+      const data = res?.data ?? { recipes: [], pageInfo: { totalPages: 1 } };
+      setRecipes(data.recipes ?? []);
+      setTotalPages(data.pageInfo?.totalPages ?? 1);
+    } catch (err) {
+      if (requestId !== requestIdRef.current) return;
+      // 인터셉터가 { code, msg, data, status } 로 reject → 서버 msg 그대로 노출
+      setError(err?.msg ?? "레시피 목록을 불러오지 못했습니다.");
+    } finally {
+      if (requestId === requestIdRef.current) setIsLoading(false);
+    }
+  };
+
+  // 최초 진입 시 1페이지 전체 목록 (이후 조회는 아래 핸들러들이 직접 호출)
   useEffect(() => {
-    let ignore = false; // 빠르게 페이지를 바꿀 때 이전 응답이 늦게 와서 덮어쓰는 것 방지
+    loadRecipes(1, "", []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const fetchRecipes = async () => {
-      setIsLoading(true);
-      setError("");
-      try {
-        // keyword 는 비어 있으면 아예 빼서 전체 조회와 동일하게 동작시킨다(스펙)
-        const params = { page: page - 1, size: PAGE_SIZE };
-        if (appliedKeyword) params.keyword = appliedKeyword;
-
-        const res = await getRecipeList(params);
-        if (ignore) return;
-        /** @type {RecipeListResponse} */
-        const data = res?.data ?? { recipes: [], pageInfo: { totalPages: 1 } };
-        setRecipes(data.recipes ?? []);
-        setTotalPages(data.pageInfo?.totalPages ?? 1);
-      } catch (err) {
-        if (ignore) return;
-        // 인터셉터가 { code, msg, data, status } 로 reject → 서버 msg 그대로 노출
-        setError(err?.msg ?? "레시피 목록을 불러오지 못했습니다.");
-      } finally {
-        if (!ignore) setIsLoading(false);
-      }
-    };
-
-    fetchRecipes();
-    return () => {
-      ignore = true;
-    };
-  }, [page, appliedKeyword]);
-
-  // 검색 버튼 클릭 또는 인풋에서 엔터(form submit) → 검색어 확정 + 1페이지부터 다시 조회
+  // 검색 버튼 클릭 또는 인풋에서 엔터(form submit) → 1페이지부터 현재 입력값 + 적용된 필터로 조회
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     setPage(1);
-    setAppliedKeyword(keyword.trim());
+    loadRecipes(1, keyword, excludeMaterials);
+  };
+
+  // 페이지 이동 → 현재 검색창 값 + 적용된 필터 유지한 채 해당 페이지 조회.
+  // (검색을 누르지 않고 입력만 바꾼 상태라면 그 입력값으로 조회된다 — 대부분의 게시판과 동일)
+  const handlePageChange = (nextPage) => {
+    setPage(nextPage);
+    loadRecipes(nextPage, keyword, excludeMaterials);
+  };
+
+  // 필터 모달 "적용하기" → 선택된 제외 재료로 교체하고 1페이지부터 다시 조회
+  const handleApplyFilter = (nextExcludes) => {
+    setExcludeMaterials(nextExcludes);
+    setIsFilterOpen(false);
+    setPage(1);
+    loadRecipes(1, keyword, nextExcludes);
+  };
+
+  // 상단 chip 의 × → 그 재료 하나만 필터에서 빼고 다시 조회
+  const handleRemoveExclude = (material) => {
+    const nextExcludes = excludeMaterials.filter((m) => m !== material);
+    setExcludeMaterials(nextExcludes);
+    setPage(1);
+    loadRecipes(1, keyword, nextExcludes);
   };
 
   return (
@@ -131,9 +169,11 @@ function RecipeListPage() {
       </TopRow>
 
       <FilterRow>
-        {/* 필터는 아직 명세에 파라미터가 없어 비활성 (준비 중) */}
-        <Button variant="secondary" disabled title="필터 기능 준비 중">
-          필터 변경
+        <Button
+          variant="secondary"
+          onClick={() => setIsFilterOpen(true)}
+        >
+          필터{excludeMaterials.length > 0 && ` (${excludeMaterials.length})`}
         </Button>
         <SearchForm onSubmit={handleSearchSubmit}>
           <SearchInput
@@ -148,6 +188,23 @@ function RecipeListPage() {
           </Button>
         </SearchForm>
       </FilterRow>
+
+      {excludeMaterials.length > 0 && (
+        <ActiveFilterRow>
+          {excludeMaterials.map((material) => (
+            <FilterChip key={material}>
+              {material} 제외
+              <ChipRemove
+                type="button"
+                onClick={() => handleRemoveExclude(material)}
+                aria-label={`${material} 필터 제거`}
+              >
+                ✕
+              </ChipRemove>
+            </FilterChip>
+          ))}
+        </ActiveFilterRow>
+      )}
 
       <ContentArea>
         {isLoading ? (
@@ -193,12 +250,19 @@ function RecipeListPage() {
               <Pagination
                 currentPage={page}
                 totalPages={totalPages}
-                onPageChange={setPage}
+                onPageChange={handlePageChange}
               />
             </PaginationWrap>
           </>
         )}
       </ContentArea>
+
+      <FilterModal
+        isOpen={isFilterOpen}
+        selected={excludeMaterials}
+        onApply={handleApplyFilter}
+        onClose={() => setIsFilterOpen(false)}
+      />
     </PageWrapper>
   );
 }
