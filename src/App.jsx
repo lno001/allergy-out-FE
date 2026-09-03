@@ -4,7 +4,7 @@ import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import Layout from "./components/layout/Layout";
 import Preview from "./preview";
-import AllergyManagePage from "./pages/mypage/AllergyManagePage";
+import AllergyManagePage from "./pages/mypage/allergy/AllergyManagePage";
 import MyPage from "./pages/mypage/MyPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import RecipeCreatePage from "./pages/recipe/RecipeCreatePage";
