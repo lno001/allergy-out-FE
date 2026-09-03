@@ -11,7 +11,7 @@ import { theme } from "../../styles/theme";
 
 export const Layout = styled.div`
   display: grid;
-  grid-template-columns: 168px 1fr;
+  grid-template-columns: 196px 1fr;
   min-height: 320px;
   border: 1px solid ${theme.color.border};
   border-radius: ${theme.radius.md};
@@ -29,25 +29,47 @@ export const KeyList = styled.ul`
   max-height: 52vh;
 `;
 
-export const KeyItem = styled.button`
+/* 분류 한 줄: [분류 전체선택 체크박스] + [오른쪽 목록 전환 버튼] */
+export const KeyRow = styled.li`
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${theme.space.sm};
-  width: 100%;
-  padding: ${theme.space.md} ${theme.space.lg};
-  font-size: ${theme.fontSize.sm};
-  font-weight: ${({ $active }) =>
-    $active ? theme.fontWeight.semibold : theme.fontWeight.regular};
-  color: ${({ $active }) => ($active ? theme.color.primary : theme.color.text)};
+  align-items: stretch;
   background: ${({ $active }) => ($active ? theme.color.white : "transparent")};
   border-left: 2px solid
     ${({ $active }) => ($active ? theme.color.primary : "transparent")};
-  transition: background ${theme.transition.fast}, color ${theme.transition.fast};
+  transition: background ${theme.transition.fast};
 
   &:hover {
     background: ${theme.color.white};
   }
+`;
+
+/* 분류 전체선택 체크박스 영역 — 클릭 타깃 확보용 패딩 */
+export const KeyCheckboxWrap = styled.label`
+  display: flex;
+  align-items: center;
+  padding-left: ${theme.space.md};
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: ${theme.color.primary};
+    cursor: pointer;
+  }
+`;
+
+/* 오른쪽 재료 목록으로 전환하는 버튼 (선택 X, 네비게이션 전용) */
+export const KeyNavButton = styled.button`
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${theme.space.sm};
+  padding: ${theme.space.md} ${theme.space.lg} ${theme.space.md} ${theme.space.sm};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${({ $active }) =>
+    $active ? theme.fontWeight.semibold : theme.fontWeight.regular};
+  color: ${({ $active }) => ($active ? theme.color.primary : theme.color.text)};
+  transition: color ${theme.transition.fast};
 `;
 
 /* 그 분류에서 선택된 재료 수 (0 이면 숨김) */

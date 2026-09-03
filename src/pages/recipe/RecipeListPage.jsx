@@ -5,6 +5,7 @@ import Alert from "../../components/common/Alert";
 import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
+import { useAuth } from "../../hooks/useAuth";
 import { getFilteredRecipes } from "../../apis/recipeApi";
 import FilterModal from "./FilterModal";
 import {
@@ -13,9 +14,6 @@ import {
   FilterRow,
   SearchForm,
   SearchInput,
-  ActiveFilterRow,
-  FilterChip,
-  ChipRemove,
   ContentArea,
   RecipeGrid,
   RecipeCard,
@@ -39,7 +37,7 @@ import {
  *   비회원이면 전체 목록. 프론트는 동일하게 호출만 하고 분기하지 않는다.
  * - 검색: 검색창 + "검색" 버튼(또는 엔터). keyword 가 비면 파라미터를 빼서 전체 조회.
  * - 필터: "필터" 버튼 → FilterModal 에서 제외할 재료명을 고르고 "적용하기".
- *   선택된 재료는 목록 상단에 chip 으로 표시하고 개별 제거 가능.
+ *   적용된 개수는 "필터 (N)" 로만 표시하고, 변경은 모달을 다시 열어서 한다(목록엔 표시 안 함).
  * - 실시간이 아니라 submit·페이지 이동·필터 적용 시점에 loadRecipes(page, keyword,
  *   excludeMaterials) 를 그때 값으로 직접 호출한다. (검색어는 별도 state 로 안 들고,
  *   제외 재료 목록만 적용된 상태라 state 로 유지한다.)
@@ -80,6 +78,7 @@ const RECIPE_FORM_PATH = "/recipe/form"; // 조리법 등록 화면
 const recipeDetailPath = (recipeNo) => `/recipe/${recipeNo}`;
 
 function RecipeListPage() {
+  const { isReady } = useAuth(); // auth 부트스트랩(토큰 재발급) 완료 여부
   const [page, setPage] = useState(1); // 화면/Pagination 은 1부터, 서버는 0부터 → 요청 시 -1
   const [keyword, setKeyword] = useState(""); // 검색창에 입력 중인 값 (controlled input)
   const [excludeMaterials, setExcludeMaterials] = useState(
@@ -107,7 +106,8 @@ function RecipeListPage() {
       const params = { page: targetPage - 1, size: PAGE_SIZE };
       const trimmed = targetKeyword.trim();
       if (trimmed) params.keyword = trimmed; // 비면 생략 → 제목 필터 없음
-      if (targetExcludes.length) params.excludeMaterials = targetExcludes.join(","); // 콤마 1개로 이어 보냄
+      if (targetExcludes.length)
+        params.excludeMaterials = targetExcludes.join(","); // 콤마 1개로 이어 보냄
 
       const res = await getFilteredRecipes(params);
       if (requestId !== requestIdRef.current) return; // 더 최근 요청이 있으면 이 응답은 버림
@@ -124,11 +124,15 @@ function RecipeListPage() {
     }
   };
 
-  // 최초 진입 시 1페이지 전체 목록 (이후 조회는 아래 핸들러들이 직접 호출)
+  // 최초 진입 시 1페이지 조회. 단, auth 부트스트랩(refresh 로 access token 재발급)이
+  // 끝난 뒤에 호출해야 요청에 토큰이 붙어 백엔드가 "그 회원의 알러지 재료를 뺀" 목록을 준다.
+  // (/filter 는 인증 선택이라 토큰 없이 보내면 401 이 아니라 게스트 목록 200 이 와서 재시도도 안 걸림)
+  // 이후 조회는 아래 핸들러들이 직접 호출.
   useEffect(() => {
+    if (!isReady) return;
     loadRecipes(1, "", []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isReady]);
 
   // 검색 버튼 클릭 또는 인풋에서 엔터(form submit) → 1페이지부터 현재 입력값 + 적용된 필터로 조회
   const handleSearchSubmit = (event) => {
@@ -152,14 +156,6 @@ function RecipeListPage() {
     loadRecipes(1, keyword, nextExcludes);
   };
 
-  // 상단 chip 의 × → 그 재료 하나만 필터에서 빼고 다시 조회
-  const handleRemoveExclude = (material) => {
-    const nextExcludes = excludeMaterials.filter((m) => m !== material);
-    setExcludeMaterials(nextExcludes);
-    setPage(1);
-    loadRecipes(1, keyword, nextExcludes);
-  };
-
   return (
     <PageWrapper className="container">
       <TopRow>
@@ -169,10 +165,7 @@ function RecipeListPage() {
       </TopRow>
 
       <FilterRow>
-        <Button
-          variant="secondary"
-          onClick={() => setIsFilterOpen(true)}
-        >
+        <Button variant="secondary" onClick={() => setIsFilterOpen(true)}>
           필터{excludeMaterials.length > 0 && ` (${excludeMaterials.length})`}
         </Button>
         <SearchForm onSubmit={handleSearchSubmit}>
@@ -188,23 +181,6 @@ function RecipeListPage() {
           </Button>
         </SearchForm>
       </FilterRow>
-
-      {excludeMaterials.length > 0 && (
-        <ActiveFilterRow>
-          {excludeMaterials.map((material) => (
-            <FilterChip key={material}>
-              {material} 제외
-              <ChipRemove
-                type="button"
-                onClick={() => handleRemoveExclude(material)}
-                aria-label={`${material} 필터 제거`}
-              >
-                ✕
-              </ChipRemove>
-            </FilterChip>
-          ))}
-        </ActiveFilterRow>
-      )}
 
       <ContentArea>
         {isLoading ? (
