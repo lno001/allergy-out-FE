@@ -272,6 +272,59 @@ export const SortOption = styled.button`
   }
 `;
 
+/* 내 알러지 자동 제외 on/off 토글 (회원 전용) — 정렬 토글 옆.
+   좌우로 미끄러지는 스위치. 켜짐=연한 초록 / 꺼짐=연한 빨강, 상태 문구는 스위치 안에 */
+export const AllergyToggle = styled.button`
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 0;
+`;
+
+/* 스위치 트랙 — radius·높이 를 정렬 토글/검색창과 맞춘다 */
+export const AllergySwitch = styled.span`
+  position: relative;
+  display: block;
+  width: 13rem;
+  height: 3.9rem;
+  border-radius: ${theme.radius.sm};
+  background: ${({ $on }) =>
+    $on ? theme.color.primary50 : theme.color.danger50};
+  border: 1px solid
+    ${({ $on }) => ($on ? theme.color.primary200 : theme.color.danger100)};
+  transition: background ${theme.transition.base},
+    border-color ${theme.transition.base};
+`;
+
+/* 스위치 안 상태 문구 — 가운데를 기준으로 손잡이 반대쪽으로 살짝만 치우친다.
+   (예전엔 left↔right 로 왕복해서 글자가 너무 크게 움직였음 → 이동폭을 ±1rem 로 축소) */
+export const AllergySwitchLabel = styled.span`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%)
+    translateX(${({ $on }) => ($on ? "-1rem" : "1rem")});
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  white-space: nowrap;
+  color: ${({ $on }) =>
+    $on ? theme.color.primary700 : theme.color.danger600};
+  transition: transform ${theme.transition.base},
+    color ${theme.transition.base};
+`;
+
+/* 좌우로 움직이는 손잡이 — 트랙과 같은 sm radius (둥근 사각형) */
+export const AllergyKnob = styled.span`
+  position: absolute;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  left: ${({ $on }) => ($on ? "calc(100% - 2.2rem - 0.3rem)" : "0.3rem")};
+  width: 2.2rem;
+  border-radius: ${theme.radius.sm};
+  background: ${({ $on }) => ($on ? theme.color.primary : theme.color.danger)};
+  box-shadow: ${theme.shadow.sm};
+  transition: left ${theme.transition.base}, background ${theme.transition.base};
+`;
+
 /* 카테고리(왼쪽) + 구분선 + 프리셋(오른쪽) 을 한 줄에 놓는 래퍼 */
 export const CategoryRow = styled.div`
   display: flex;
