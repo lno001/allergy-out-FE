@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import Layout from "./components/layout/Layout";
+import HomePage from "./pages/home/HomePage";
 import Preview from "./preview";
 import AllergyManagePage from "./pages/mypage/allergy/AllergyManagePage";
 import BookmarkListPage from "./pages/mypage/BookmarkListPage";
@@ -17,7 +18,8 @@ function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/" element={<Preview />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/preview" element={<Preview />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/recipe/form" element={<RecipeCreatePage />} />
