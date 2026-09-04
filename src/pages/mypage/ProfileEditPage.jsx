@@ -38,9 +38,19 @@ import {
  */
 function ProfileEditPage() {
   const { member, refetch } = useOutletContext();
-  const { logout } = useAuth();
+  const { logout, patchUser } = useAuth();
   const navigate = useNavigate();
   const [openModal, setOpenModal] = useState(null); // null | 'name'|'email'|'phone'|'password'|'image'|'withdraw'
+
+  // 헤더에 보이는 값(이름·프로필 사진)은 마이페이지 재조회와 별개로 useAuth 도 갱신해준다.
+  const handleNameSuccess = (memberName) => {
+    refetch();
+    patchUser({ memberName });
+  };
+  const handleImageSuccess = (memberImgPath) => {
+    refetch();
+    patchUser({ memberImgPath }); // 업로드=URL / 기본프로필로=null
+  };
 
   const joinDate = member.createDate
     ? member.createDate.slice(0, 10).replaceAll("-", ".")
@@ -137,7 +147,7 @@ function ProfileEditPage() {
         isOpen={openModal === "name"}
         onClose={() => setOpenModal(null)}
         currentName={member.memberName}
-        onSuccess={refetch}
+        onSuccess={handleNameSuccess}
       />
       <EditEmailModal
         isOpen={openModal === "email"}
@@ -161,7 +171,7 @@ function ProfileEditPage() {
         onClose={() => setOpenModal(null)}
         currentImgPath={member.memberImgPath}
         memberName={member.memberName}
-        onSuccess={refetch}
+        onSuccess={handleImageSuccess}
       />
       <WithdrawModal
         isOpen={openModal === "withdraw"}

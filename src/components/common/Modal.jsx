@@ -51,6 +51,10 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'sm' }) {
   const boxRef = useRef(null);
   const bodyRef = useRef(null);
   const previouslyFocusedRef = useRef(null);
+  // 입력칸 안에서 마우스로 글자를 긁다가 백드롭 위에서 버튼을 떼면, click 이벤트가
+  // 백드롭에서 발생해 모달이 닫히는 문제가 있었다. "누른 지점"이 백드롭 자신일 때만
+  // 닫도록, pointerdown 타깃을 기억해 두고 pointerup에서 함께 확인한다.
+  const pointerDownOnBackdropRef = useRef(false);
 
   // onClose는 부모(모달을 쓰는 쪽)가 렌더될 때마다 새 함수로 내려오는 경우가 많다
   // (예: 인라인 화살표 함수). 아래 큰 useEffect의 deps에 onClose를 직접 넣으면
@@ -107,7 +111,17 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'sm' }) {
   if (!isOpen) return null;
 
   return (
-    <ModalBackdrop onClick={onClose} role="presentation">
+    <ModalBackdrop
+      role="presentation"
+      onPointerDown={(e) => {
+        pointerDownOnBackdropRef.current = e.target === e.currentTarget;
+      }}
+      onPointerUp={(e) => {
+        const startedOnBackdrop = pointerDownOnBackdropRef.current;
+        pointerDownOnBackdropRef.current = false;
+        if (startedOnBackdrop && e.target === e.currentTarget) onClose();
+      }}
+    >
       <ModalBox
         ref={boxRef}
         tabIndex={-1}
@@ -115,7 +129,6 @@ function Modal({ isOpen, onClose, title, children, footer, size = 'sm' }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
-        onClick={(e) => e.stopPropagation()}
       >
         <ModalHeader>
           <ModalTitle id={titleId}>{title}</ModalTitle>

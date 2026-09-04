@@ -59,7 +59,10 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
     onClose();
   };
 
+  const canSubmit = currentPassword && newPassword && confirmPassword;
+
   const handleSubmit = () => {
+    if (!canSubmit || submitting) return; // Enter 등 조건 안 맞을 때 방지
     if (newPassword !== confirmPassword) {
       setErrors({ confirmPassword: "새 비밀번호가 일치하지 않습니다." });
       return;
@@ -84,8 +87,6 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
     );
   };
 
-  const canSubmit = currentPassword && newPassword && confirmPassword;
-
   return (
     <Modal
       isOpen={isOpen}
@@ -102,54 +103,67 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
         </>
       }
     >
-      <FormStack>
-        <Input
-          label="현재 비밀번호"
-          required
-          type={visible.current ? "text" : "password"}
-          placeholder="현재 비밀번호를 입력해주세요"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          error={errors.currentPassword}
-          suffix={
-            <PasswordToggle
-              visible={visible.current}
-              onToggle={() => toggleVisible("current")}
-            />
-          }
-        />
-        <Input
-          label="새 비밀번호"
-          required
-          type={visible.next ? "text" : "password"}
-          placeholder="새 비밀번호를 입력해주세요"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          error={errors.newPassword}
-          suffix={
-            <PasswordToggle visible={visible.next} onToggle={() => toggleVisible("next")} />
-          }
-        />
-        <Input
-          label="새 비밀번호 확인"
-          required
-          type={visible.confirm ? "text" : "password"}
-          placeholder="새 비밀번호를 한 번 더 입력해주세요"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          error={errors.confirmPassword}
-          suffix={
-            <PasswordToggle
-              visible={visible.confirm}
-              onToggle={() => toggleVisible("confirm")}
-            />
-          }
-        />
-        <HelperBox>
-          <HelperBoxTitle>💡 비밀번호 안전 규칙</HelperBoxTitle>
-          영문, 숫자를 포함하여 8자 이상 20자 이하로 설정해주세요.
-        </HelperBox>
-      </FormStack>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
+        <FormStack>
+          <Input
+            label="현재 비밀번호"
+            required
+            type={visible.current ? "text" : "password"}
+            placeholder="현재 비밀번호를 입력해주세요"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            error={errors.currentPassword}
+            suffix={
+              <PasswordToggle
+                visible={visible.current}
+                onToggle={() => toggleVisible("current")}
+              />
+            }
+          />
+          <Input
+            label="새 비밀번호"
+            required
+            type={visible.next ? "text" : "password"}
+            placeholder="새 비밀번호를 입력해주세요"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            error={errors.newPassword}
+            suffix={
+              <PasswordToggle
+                visible={visible.next}
+                onToggle={() => toggleVisible("next")}
+              />
+            }
+          />
+          <Input
+            label="새 비밀번호 확인"
+            required
+            type={visible.confirm ? "text" : "password"}
+            placeholder="새 비밀번호를 한 번 더 입력해주세요"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            error={errors.confirmPassword}
+            suffix={
+              <PasswordToggle
+                visible={visible.confirm}
+                onToggle={() => toggleVisible("confirm")}
+              />
+            }
+          />
+          <HelperBox>
+            <HelperBoxTitle>💡 비밀번호 안전 규칙</HelperBoxTitle>
+            영문, 숫자를 포함하여 8자 이상 20자 이하로 설정해주세요.
+          </HelperBox>
+        </FormStack>
+
+        {/* Enter 로 폼 제출되게 하는 숨은 submit (footer 버튼은 form 밖이라 필요) */}
+        <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
+      </form>
     </Modal>
   );
 }
