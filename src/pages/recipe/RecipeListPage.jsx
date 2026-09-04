@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigationType } from "react-router-dom";
 
 import Alert from "../../components/common/Alert";
 import Button from "../../components/common/Button";
@@ -82,6 +82,8 @@ import {
  * - 필터: "필터" 버튼 → FilterModal 에서 제외할 재료명을 고르고 "적용하기".
  *   적용된 개수는 "필터 (N)" 로만 표시하고, 변경은 모달을 다시 열어서 한다.
  * - 조회는 submit·페이지 이동·필터 적용 시점에 loadRecipes(page, keyword, excludeMaterials) 직접 호출.
+ * - 상세 → 뒤로가기(브라우저 back)로 돌아오면 보던 페이지·검색어·필터를 그대로 복원한다
+ *   (sessionStorage + useNavigationType. 헤더 링크로 새로 들어오면 복원 안 함).
  * - 헤더/푸터는 components/layout 담당. props 없음.
  */
 
@@ -104,6 +106,29 @@ import {
 
 const PAGE_SIZE = 8; // 4열 × 2행
 const RECIPE_FORM_PATH = "/recipe/form"; // 조리법 등록 화면
+
+/**
+ * 목록 화면 상태(페이지·검색어·필터·카테고리·프리셋)를 sessionStorage 에 저장/복원.
+ * 상세 → 뒤로가기(브라우저 back) 로 돌아왔을 때 보던 페이지 그대로 복원하기 위함.
+ * (헤더의 "레시피 조회" 로 새로 들어오면 복원하지 않는다 — useNavigationType 으로 구분)
+ */
+const LIST_STATE_KEY = "recipeList:lastView";
+
+const readListState = () => {
+  try {
+    return JSON.parse(sessionStorage.getItem(LIST_STATE_KEY) || "null");
+  } catch {
+    return null;
+  }
+};
+
+const writeListState = (state) => {
+  try {
+    sessionStorage.setItem(LIST_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // 시크릿 모드 등에서 sessionStorage 접근 불가 — 복원 없이 동작 (기능상 문제 없음)
+  }
+};
 
 /**
  * 레시피 카테고리 — 1차 예시(틀만).
@@ -271,14 +296,23 @@ function ChevronIcon({ dir }) {
 
 function RecipeListPage() {
   const { isReady } = useAuth(); // auth 부트스트랩(토큰 재발급) 완료 여부
-  const [page, setPage] = useState(1); // 화면/Pagination 은 1부터, 서버는 0부터 → 요청 시 -1
-  const [keyword, setKeyword] = useState(""); // 검색창에 입력 중인 값 (controlled input)
+
+  // 뒤로가기/앞으로가기(POP)로 진입했고 저장된 상태가 있으면 그걸로 복원, 아니면 기본값.
+  const navigationType = useNavigationType();
+  const [restored] = useState(() =>
+    navigationType === "POP" ? readListState() : null,
+  );
+
+  const [page, setPage] = useState(restored?.page ?? 1); // 화면/Pagination 은 1부터, 서버는 0부터 → 요청 시 -1
+  const [keyword, setKeyword] = useState(restored?.keyword ?? ""); // 검색창 값 (controlled input)
   const [excludeMaterials, setExcludeMaterials] = useState(
-    /** @type {string[]} */ ([]),
+    /** @type {string[]} */ (restored?.excludeMaterials ?? []),
   ); // 필터 모달에서 "적용" 한 제외 재료명
   const [sortBy] = useState("latest"); // "latest" | "popular" — 인기순은 백엔드 미지원이라 아직 setter 없음
-  const [category, setCategory] = useState(ALL_CATEGORY); // 선택된 카테고리 ("전체" = 미적용)
-  const [presets, setPresets] = useState(/** @type {string[]} */ ([])); // 켜진 빠른 프리셋 key 들
+  const [category, setCategory] = useState(restored?.category ?? ALL_CATEGORY); // 선택된 카테고리 ("전체" = 미적용)
+  const [presets, setPresets] = useState(
+    /** @type {string[]} */ (restored?.presets ?? []),
+  ); // 켜진 빠른 프리셋 key 들
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [featuredIndex, setFeaturedIndex] = useState(0); // 추천 캐러셀 현재 위치
   const [recipes, setRecipes] = useState(/** @type {RecipeListItem[]} */ ([]));
@@ -333,9 +367,15 @@ function RecipeListPage() {
   // (/filter 는 인증 선택이라 토큰 없이 보내면 401 이 아니라 게스트 목록 200 이 와서 재시도도 안 걸림)
   useEffect(() => {
     if (!isReady) return;
-    loadRecipes(1, "", [], ALL_CATEGORY, []);
+    // 복원된 값(뒤로가기) 또는 기본값으로 최초 조회
+    loadRecipes(page, keyword, excludeMaterials, category, presets);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady]);
+
+  // 현재 화면 상태를 sessionStorage 에 저장 — 상세 갔다가 뒤로가기로 돌아오면 이걸로 복원
+  useEffect(() => {
+    writeListState({ page, keyword, excludeMaterials, category, presets });
+  }, [page, keyword, excludeMaterials, category, presets]);
 
   // 인풋에서 엔터(form submit) → 1페이지부터 현재 입력값 + 적용된 필터/카테고리/프리셋으로 조회
   const handleSearchSubmit = (event) => {
