@@ -34,6 +34,7 @@ function EditNameModal({ isOpen, onClose, currentName, onSuccess }) {
   };
 
   const handleSubmit = () => {
+    if (!name.trim() || submitting) return; // Enter 등 조건 안 맞을 때 방지
     setError("");
     run(
       async () => {
@@ -68,17 +69,27 @@ function EditNameModal({ isOpen, onClose, currentName, onSuccess }) {
         </>
       }
     >
-      <FormStack>
-        <Input label="현재 이름" value={currentName} disabled readOnly />
-        <Input
-          label="새로운 이름"
-          required
-          placeholder="변경할 이름을 입력해주세요"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          error={error}
-        />
-      </FormStack>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
+        <FormStack>
+          <Input label="현재 이름" value={currentName} disabled readOnly />
+          <Input
+            label="새로운 이름"
+            required
+            placeholder="변경할 이름을 입력해주세요"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            error={error}
+          />
+        </FormStack>
+
+        {/* Enter 로 폼 제출되게 하는 숨은 submit (footer 버튼은 form 밖이라 필요) */}
+        <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
+      </form>
     </Modal>
   );
 }

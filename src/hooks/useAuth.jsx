@@ -62,8 +62,14 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // 프로필 수정 후 헤더(useAuth().user)를 다시 조회 없이 동기화하는 용도.
+  // 예: 이름 변경 성공 → patchUser({ memberName }), 사진 변경 → patchUser({ memberImgPath }).
+  const patchUser = (partial) => {
+    setUser((prev) => (prev ? { ...prev, ...partial } : prev));
+  };
+
   const value = useMemo(
-    () => ({ user, isReady, login, logout }),
+    () => ({ user, isReady, login, logout, patchUser }),
     [user, isReady],
   );
 
