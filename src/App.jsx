@@ -31,7 +31,7 @@ function App() {
           <Route path="allergy" element={<AllergyManagePage />} />
           <Route path="bookmark" element={<BookmarkListPage />} />
         </Route>
-        <Route path="*" element={<Preview />} />
+        <Route path="*" element={<HomePage />} />
       </Route>
     </Routes>
   );
