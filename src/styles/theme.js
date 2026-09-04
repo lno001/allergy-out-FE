@@ -117,6 +117,16 @@ export const theme = {
     full: '999px', // 아바타, 원형 아이콘, 뱃지 pill
   },
 
+  // ---------- Layout — space 스케일(최대 6.4rem)로 표현 못 하는 구조 치수 ----------
+  size: {
+    recipeCardMin: '20rem', // 레시피 카드 그리드 최소 열 너비 (구 200px)
+  },
+
+  // ---------- Aspect ratio ----------
+  ratio: {
+    thumbnail: '4 / 3', // 레시피 카드 썸네일 비율
+  },
+
   // ---------- Shadow ----------
   shadow: {
     sm: '0 1px 3px rgba(43, 42, 40, 0.06)',
