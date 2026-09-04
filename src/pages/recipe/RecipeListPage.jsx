@@ -359,7 +359,6 @@ function RecipeListPage() {
   };
 
   // 카테고리 선택 → 1페이지부터 그 카테고리로 조회
-  // (백엔드 category 파라미터 전이라 지금은 결과가 같지만, 배선은 완성해 둠)
   const handleSelectCategory = (nextCategory) => {
     setCategory(nextCategory);
     setPage(1);
