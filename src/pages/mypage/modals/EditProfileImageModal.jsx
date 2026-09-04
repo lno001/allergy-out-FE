@@ -17,7 +17,7 @@ import {
   ResetLink,
 } from "./EditProfileImageModal.styled";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
 /**
@@ -46,11 +46,11 @@ function EditProfileImageModal({ isOpen, onClose, currentImgPath, memberName, on
   const validateAndSetFile = (candidate) => {
     if (!candidate) return;
     if (!ALLOWED_TYPES.includes(candidate.type)) {
-      setError("jpg, jpeg, png, gif, webp 파일만 업로드할 수 있습니다.");
+      setError("지원하지 않는 파일 형식입니다. (jpg, jpeg, png 만 가능)");
       return;
     }
     if (candidate.size > MAX_SIZE_BYTES) {
-      setError("5MB 이하 파일만 업로드할 수 있습니다.");
+      setError("파일 크기가 너무 큽니다. (최대 5MB)");
       return;
     }
     setError("");
@@ -129,7 +129,7 @@ function EditProfileImageModal({ isOpen, onClose, currentImgPath, memberName, on
       >
         <DropzoneIcon aria-hidden="true">🖼️</DropzoneIcon>
         <DropzoneText>이미지를 드래그하거나 클릭하여 업로드</DropzoneText>
-        <DropzoneSubText>지원 형식: JPG, PNG (최대 5MB)</DropzoneSubText>
+        <DropzoneSubText>지원 형식: JPG, JPEG, PNG (최대 5MB)</DropzoneSubText>
         <input
           ref={fileInputRef}
           type="file"
