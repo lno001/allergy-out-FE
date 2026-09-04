@@ -26,6 +26,7 @@ const DOMAIN_SUGGESTIONS = [
   "hanmail.net",
   "kakao.com",
   "nate.com",
+  "outlook.com",
 ];
 
 /** 제출 허용용 느슨한 도메인 체크 — 실제 유효성은 서버(@Email)가 판정한다. */
