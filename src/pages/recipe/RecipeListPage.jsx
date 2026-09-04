@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigationType } from "react-router-dom";
 
 import Alert from "../../components/common/Alert";
 import Button from "../../components/common/Button";
@@ -33,6 +33,10 @@ import {
   RegisterButton,
   SortToggle,
   SortOption,
+  AllergyToggle,
+  AllergySwitch,
+  AllergySwitchLabel,
+  AllergyKnob,
   CategoryRow,
   RowDivider,
   PresetGroup,
@@ -81,7 +85,9 @@ import {
  * - 검색: 검색창 + "검색" 버튼(또는 엔터). keyword 가 비면 파라미터를 빼서 전체 조회.
  * - 필터: "필터" 버튼 → FilterModal 에서 제외할 재료명을 고르고 "적용하기".
  *   적용된 개수는 "필터 (N)" 로만 표시하고, 변경은 모달을 다시 열어서 한다.
- * - 조회는 submit·페이지 이동·필터 적용 시점에 loadRecipes(page, keyword, excludeMaterials) 직접 호출.
+ * - 조회는 submit·페이지 이동·필터/카테고리/프리셋/알러지토글 변경 시점에 loadRecipes({...}) 직접 호출.
+ * - 상세 → 뒤로가기(브라우저 back)로 돌아오면 보던 페이지·검색어·필터를 그대로 복원한다
+ *   (sessionStorage + useNavigationType. 헤더 링크로 새로 들어오면 복원 안 함).
  * - 헤더/푸터는 components/layout 담당. props 없음.
  */
 
@@ -104,6 +110,29 @@ import {
 
 const PAGE_SIZE = 8; // 4열 × 2행
 const RECIPE_FORM_PATH = "/recipe/form"; // 조리법 등록 화면
+
+/**
+ * 목록 화면 상태(페이지·검색어·필터·카테고리·프리셋)를 sessionStorage 에 저장/복원.
+ * 상세 → 뒤로가기(브라우저 back) 로 돌아왔을 때 보던 페이지 그대로 복원하기 위함.
+ * (헤더의 "레시피 조회" 로 새로 들어오면 복원하지 않는다 — useNavigationType 으로 구분)
+ */
+const LIST_STATE_KEY = "recipeList:lastView";
+
+const readListState = () => {
+  try {
+    return JSON.parse(sessionStorage.getItem(LIST_STATE_KEY) || "null");
+  } catch {
+    return null;
+  }
+};
+
+const writeListState = (state) => {
+  try {
+    sessionStorage.setItem(LIST_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // 시크릿 모드 등에서 sessionStorage 접근 불가 — 복원 없이 동작 (기능상 문제 없음)
+  }
+};
 
 /**
  * 레시피 카테고리 — 1차 예시(틀만).
@@ -270,15 +299,27 @@ function ChevronIcon({ dir }) {
 }
 
 function RecipeListPage() {
-  const { isReady } = useAuth(); // auth 부트스트랩(토큰 재발급) 완료 여부
-  const [page, setPage] = useState(1); // 화면/Pagination 은 1부터, 서버는 0부터 → 요청 시 -1
-  const [keyword, setKeyword] = useState(""); // 검색창에 입력 중인 값 (controlled input)
+  const { isReady, user } = useAuth(); // isReady: 부트스트랩 완료 / user: 로그인 회원 정보(없으면 비회원)
+
+  // 뒤로가기/앞으로가기(POP)로 진입했고 저장된 상태가 있으면 그걸로 복원, 아니면 기본값.
+  const navigationType = useNavigationType();
+  const [restored] = useState(() =>
+    navigationType === "POP" ? readListState() : null,
+  );
+
+  const [page, setPage] = useState(restored?.page ?? 1); // 화면/Pagination 은 1부터, 서버는 0부터 → 요청 시 -1
+  const [keyword, setKeyword] = useState(restored?.keyword ?? ""); // 검색창 값 (controlled input)
   const [excludeMaterials, setExcludeMaterials] = useState(
-    /** @type {string[]} */ ([]),
+    /** @type {string[]} */ (restored?.excludeMaterials ?? []),
   ); // 필터 모달에서 "적용" 한 제외 재료명
   const [sortBy] = useState("latest"); // "latest" | "popular" — 인기순은 백엔드 미지원이라 아직 setter 없음
-  const [category, setCategory] = useState(ALL_CATEGORY); // 선택된 카테고리 ("전체" = 미적용)
-  const [presets, setPresets] = useState(/** @type {string[]} */ ([])); // 켜진 빠른 프리셋 key 들
+  const [category, setCategory] = useState(restored?.category ?? ALL_CATEGORY); // 선택된 카테고리 ("전체" = 미적용)
+  const [presets, setPresets] = useState(
+    /** @type {string[]} */ (restored?.presets ?? []),
+  ); // 켜진 빠른 프리셋 key 들
+  const [excludeMyAllergy, setExcludeMyAllergy] = useState(
+    restored?.excludeMyAllergy ?? true,
+  ); // 회원 본인 알러지 재료가 든 레시피 숨김 여부 (기본 켜짐 = 백엔드 기본 동작)
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [featuredIndex, setFeaturedIndex] = useState(0); // 추천 캐러셀 현재 위치
   const [recipes, setRecipes] = useState(/** @type {RecipeListItem[]} */ ([]));
@@ -293,13 +334,14 @@ function RecipeListPage() {
    * 레시피 목록 조회. page(1부터)·keyword·excludeMaterials 를 인자로 직접 받아 호출한다.
    * (조회 시점 값을 그대로 넘겨 "state 변경 → 리렌더 → useEffect" 사이클을 안 탄다.)
    */
-  const loadRecipes = async (
-    targetPage,
-    targetKeyword,
-    targetExcludes,
-    targetCategory,
-    targetPresets,
-  ) => {
+  const loadRecipes = async ({
+    page: targetPage = 1,
+    keyword: targetKeyword = "",
+    excludeMaterials: targetExcludes = [],
+    category: targetCategory = ALL_CATEGORY,
+    presets: targetPresets = [],
+    excludeMyAllergy: targetExcludeMyAllergy = true,
+  } = {}) => {
     const requestId = ++requestIdRef.current;
     setIsLoading(true);
     setError("");
@@ -312,6 +354,7 @@ function RecipeListPage() {
       if (targetCategory && targetCategory !== ALL_CATEGORY)
         params.category = targetCategory; // 백엔드에 category 파라미터 생기면 그대로 동작 (현재는 무시됨)
       if (targetPresets?.length) params.presets = targetPresets.join(","); // 빠른 프리셋 — 백엔드 지원 시 동작
+      if (targetExcludeMyAllergy === false) params.applyMyAllergy = "false"; // 회원 알러지 자동 제외 끄기 — 백엔드 지원 시 동작 (기본은 켜짐 = 파라미터 생략)
       // TODO(백엔드): sort 파라미터 생기면 params.sort = sortBy 연결 (지금은 최신순 고정)
 
       const res = await getFilteredRecipes(params);
@@ -331,23 +374,32 @@ function RecipeListPage() {
   // 최초 진입 시 1페이지 조회. auth 부트스트랩(refresh 로 access token 재발급) 완료 후에
   // 호출해야 요청에 토큰이 붙어 백엔드가 "그 회원의 알러지 재료를 뺀" 목록을 준다.
   // (/filter 는 인증 선택이라 토큰 없이 보내면 401 이 아니라 게스트 목록 200 이 와서 재시도도 안 걸림)
+  // 지금 조회에 쓰는 검색/필터 상태를 한 묶음으로 (loadRecipes 에 그대로 펼쳐 넘긴다)
+  const queryState = { keyword, excludeMaterials, category, presets, excludeMyAllergy };
+
   useEffect(() => {
     if (!isReady) return;
-    loadRecipes(1, "", [], ALL_CATEGORY, []);
+    // 복원된 값(뒤로가기) 또는 기본값으로 최초 조회
+    loadRecipes({ page, ...queryState });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady]);
 
-  // 인풋에서 엔터(form submit) → 1페이지부터 현재 입력값 + 적용된 필터/카테고리/프리셋으로 조회
+  // 현재 화면 상태를 sessionStorage 에 저장 — 상세 갔다가 뒤로가기로 돌아오면 이걸로 복원
+  useEffect(() => {
+    writeListState({ page, ...queryState });
+  }, [page, keyword, excludeMaterials, category, presets, excludeMyAllergy]);
+
+  // 인풋에서 엔터(form submit) → 1페이지부터 현재 입력값 + 적용된 필터로 조회
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     setPage(1);
-    loadRecipes(1, keyword, excludeMaterials, category, presets);
+    loadRecipes({ page: 1, ...queryState });
   };
 
-  // 페이지 이동 → 현재 검색창 값 + 적용된 필터/카테고리/프리셋 유지한 채 해당 페이지 조회
+  // 페이지 이동 → 현재 검색/필터 유지한 채 해당 페이지 조회
   const handlePageChange = (nextPage) => {
     setPage(nextPage);
-    loadRecipes(nextPage, keyword, excludeMaterials, category, presets);
+    loadRecipes({ page: nextPage, ...queryState });
   };
 
   // 필터 모달 "적용하기" → 선택된 제외 재료로 교체하고 1페이지부터 다시 조회
@@ -355,14 +407,14 @@ function RecipeListPage() {
     setExcludeMaterials(nextExcludes);
     setIsFilterOpen(false);
     setPage(1);
-    loadRecipes(1, keyword, nextExcludes, category, presets);
+    loadRecipes({ page: 1, ...queryState, excludeMaterials: nextExcludes });
   };
 
   // 카테고리 선택 → 1페이지부터 그 카테고리로 조회
   const handleSelectCategory = (nextCategory) => {
     setCategory(nextCategory);
     setPage(1);
-    loadRecipes(1, keyword, excludeMaterials, nextCategory, presets);
+    loadRecipes({ page: 1, ...queryState, category: nextCategory });
   };
 
   // 빠른 프리셋 토글 (여러 개 동시 가능) → 1페이지부터 다시 조회
@@ -372,7 +424,15 @@ function RecipeListPage() {
       : [...presets, key];
     setPresets(nextPresets);
     setPage(1);
-    loadRecipes(1, keyword, excludeMaterials, category, nextPresets);
+    loadRecipes({ page: 1, ...queryState, presets: nextPresets });
+  };
+
+  // 내 알러지 재료 숨김 on/off → 1페이지부터 다시 조회 (회원만 노출되는 버튼)
+  const handleToggleMyAllergy = () => {
+    const next = !excludeMyAllergy;
+    setExcludeMyAllergy(next);
+    setPage(1);
+    loadRecipes({ page: 1, ...queryState, excludeMyAllergy: next });
   };
 
   // 추천 캐러셀 넘기기 (양끝에서 순환)
@@ -495,6 +555,30 @@ function RecipeListPage() {
                 인기순
               </SortOption>
             </SortToggle>
+
+            {/* 회원 본인 알러지 자동 제외 on/off — 로그인 회원에게만 노출.
+                좌우로 미끄러지는 스위치, 상태 문구가 스위치 안에서 같이 움직인다 */}
+            {user && (
+              <AllergyToggle
+                type="button"
+                role="switch"
+                aria-label="내 알러지 재료 숨기기"
+                aria-checked={excludeMyAllergy}
+                onClick={handleToggleMyAllergy}
+                title={
+                  excludeMyAllergy
+                    ? "내 알러지 재료가 든 레시피를 숨기는 중 — 눌러서 전체 보기"
+                    : "모든 레시피를 보는 중 — 눌러서 내 알러지 숨기기"
+                }
+              >
+                <AllergySwitch $on={excludeMyAllergy}>
+                  <AllergySwitchLabel $on={excludeMyAllergy}>
+                    {excludeMyAllergy ? "알러지 숨김" : "전체 보기"}
+                  </AllergySwitchLabel>
+                  <AllergyKnob $on={excludeMyAllergy} />
+                </AllergySwitch>
+              </AllergyToggle>
+            )}
           </ToolbarGroup>
 
           <ToolbarEnd>

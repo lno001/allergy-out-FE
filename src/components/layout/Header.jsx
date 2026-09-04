@@ -70,8 +70,8 @@ function Header({ user = null, onLogout }) {
         {user && !isAdmin && (
           <Nav>
             <NavItem to="/mypage/allergy">알러지 정보</NavItem>
-            <NavItem to="/mypage">마이페이지</NavItem>
             <NavItem to="/recipe">레시피 조회</NavItem>
+            <NavItem to="/mypage">마이페이지</NavItem>
             <UserBadge>
               <Avatar
                 name={user.memberName}
