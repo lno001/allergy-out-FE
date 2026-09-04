@@ -26,13 +26,6 @@ export const RecommendSection = styled.section`
   margin-bottom: ${theme.space["4xl"]};
 `;
 
-export const SectionHeading = styled.h2`
-  margin-bottom: ${theme.space.lg};
-  font-size: ${theme.fontSize.xl};
-  font-weight: ${theme.fontWeight.bold};
-  color: ${theme.color.text};
-`;
-
 /* 캐러셀 — 카드 + 좌우 화살표 (화살표는 카드 위에 겹쳐 띄움) */
 export const FeaturedCarousel = styled.div`
   position: relative;
@@ -41,23 +34,24 @@ export const FeaturedCarousel = styled.div`
 export const CarouselArrow = styled.button`
   position: absolute;
   top: 50%;
-  ${({ $side }) => ($side === "left" ? "left: 1.2rem;" : "right: 1.2rem;")}
+  ${({ $side }) => ($side === "left" ? "left: 1.6rem;" : "right: 1.6rem;")}
   transform: translateY(-50%);
   z-index: 1;
 
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.6rem;
-  height: 3.6rem;
+  width: 4rem;
+  height: 4rem;
   color: ${theme.color.text};
   background: ${theme.color.white};
-  border-radius: ${theme.radius.sm};
-  box-shadow: ${theme.shadow.sm};
-  transition: background ${theme.transition.fast};
+  border-radius: ${theme.radius.full};
+  box-shadow: ${theme.shadow.md};
+  transition: transform ${theme.transition.fast}, background ${theme.transition.fast};
 
   &:hover {
     background: ${theme.color.bgSoft};
+    transform: translateY(-50%) scale(1.06);
   }
 `;
 
@@ -77,26 +71,34 @@ export const CarouselDot = styled.button`
   transition: width ${theme.transition.fast}, background ${theme.transition.fast};
 `;
 
-/* 추천 카드 — 이미지가 카드 높이를 꽉 채우고, 본문은 세로 가운데 정렬해 여백을 줄인다 */
+/* 추천 카드 — 카드/이미지/본문 모두 높이를 명시적으로 고정한다.
+   이미지 원본 비율이 뭐든( 세로/가로 상관없이 ) 이 박스를 cover 로 꽉 채운다 (레시피 사이트 표준).
+   본문도 같은 높이로 고정하고 넘치면 잘라내 레이아웃이 안 무너지게 한다. */
+const FEATURED_COL_W = "36rem";
+const FEATURED_H = "26rem";
+
 export const FeaturedCard = styled.div`
   display: grid;
-  grid-template-columns: 30rem 1fr;
-  min-height: 22rem;
+  grid-template-columns: ${FEATURED_COL_W} 1fr;
+  grid-template-rows: ${FEATURED_H}; /* 행 높이 고정 → 이미지가 세로여도 카드가 안 늘어남 */
   overflow: hidden;
   background: ${theme.color.bg};
-  border: 1px solid ${theme.color.border};
-  border-radius: ${theme.radius.sm};
+  border: 1px solid ${theme.color.gray100};
+  border-radius: ${theme.radius.md};
+  box-shadow: ${theme.shadow.md};
 `;
 
 export const FeaturedThumb = styled.div`
-  height: 100%;
+  width: 100%;
+  height: ${FEATURED_H};
+  overflow: hidden;
   background: ${theme.color.gray100};
 
   img {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: cover; /* 박스를 꽉 채우고 넘치는 부분만 크롭 */
   }
 `;
 
@@ -112,10 +114,20 @@ export const FeaturedThumbFallback = styled.span`
 export const FeaturedBody = styled.div`
   display: flex;
   flex-direction: column;
-  justify-content: center; /* 세로 가운데 → 아래쪽 빈 공간 제거 */
-  gap: ${theme.space.md};
+  justify-content: safe center; /* 들어오면 가운데, 넘치면 위 기준(위가 안 잘리게) */
+  gap: ${theme.space.sm};
+  height: ${FEATURED_H};
+  overflow: hidden;
   /* 오른쪽은 넘김 화살표가 겹치므로 여백을 더 준다 */
-  padding: ${theme.space["2xl"]} 6rem ${theme.space["2xl"]} ${theme.space["3xl"]};
+  padding: ${theme.space.xl} 6.4rem ${theme.space.xl} ${theme.space["3xl"]};
+`;
+
+/* 제목 위 작은 라벨 */
+export const FeaturedEyebrow = styled.span`
+  font-size: ${theme.fontSize.xs};
+  font-weight: ${theme.fontWeight.bold};
+  letter-spacing: 0.04em;
+  color: ${theme.color.primary};
 `;
 
 export const FeaturedTitle = styled.h3`
@@ -134,6 +146,7 @@ export const FeaturedSpecRow = styled.div`
 export const FeaturedSpec = styled.span`
   padding: 0.3rem ${theme.space.md};
   font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
   color: ${theme.color.sub};
   background: ${theme.color.bgSoft};
   border-radius: ${theme.radius.sm};
@@ -142,7 +155,7 @@ export const FeaturedSpec = styled.span`
 export const FeaturedSummary = styled.p`
   font-size: ${theme.fontSize.sm};
   line-height: ${theme.lineHeight.base};
-  color: ${theme.color.text};
+  color: ${theme.color.gray700};
 
   /* 2줄 말줄임 */
   display: -webkit-box;
@@ -152,14 +165,14 @@ export const FeaturedSummary = styled.p`
 `;
 
 export const FeaturedIngredient = styled.p`
-  font-size: ${theme.fontSize.xs};
+  font-size: ${theme.fontSize.sm};
   color: ${theme.color.sub};
 `;
 
 export const FeaturedMeta = styled.div`
   display: flex;
   gap: ${theme.space.xs};
-  margin-top: ${theme.space.sm};
+  margin-top: ${theme.space.xs};
   font-size: ${theme.fontSize.xs};
   color: ${theme.color.sub};
 
@@ -204,6 +217,34 @@ export const ToolbarEnd = styled.div`
   gap: ${theme.space.md};
 `;
 
+/* 조리법 등록 — 색 거의 없이 연하게. 얇은 테두리 + 옅은 배경, 펜 아이콘 */
+export const RegisterButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: ${theme.space.xs};
+  flex-shrink: 0;
+  padding: ${theme.space.sm} ${theme.space.lg};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  color: ${theme.color.gray700};
+  background: ${theme.color.white};
+  border: 1px solid ${theme.color.border};
+  border-radius: ${theme.radius.sm};
+  transition: background ${theme.transition.fast}, border-color ${theme.transition.fast},
+    color ${theme.transition.fast};
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  &:hover {
+    color: ${theme.color.text};
+    background: ${theme.color.bgSoft};
+    border-color: ${theme.color.gray400};
+  }
+`;
+
 /* 최신순 / 인기순 세그먼트 토글 */
 export const SortToggle = styled.div`
   display: inline-flex;
@@ -231,19 +272,93 @@ export const SortOption = styled.button`
   }
 `;
 
-/* 카테고리 줄 — 가로 스크롤. 텍스트 전에 비주얼(이모지 타일)로 종류가 보이게 */
+/* 카테고리(왼쪽) + 구분선 + 프리셋(오른쪽) 을 한 줄에 놓는 래퍼 */
+export const CategoryRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.space.xl};
+`;
+
+/* 후식 ↔ 프리셋 세로 구분선 — 타일 이모지 높이(6.4rem)에 맞춤 */
+export const RowDivider = styled.span`
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 6.4rem;
+  background: ${theme.color.gray200};
+`;
+
+/* 빠른 프리셋 — 이모지 타일 4개, 무조건 한 줄 (안 접힘). 공간 부족하면 카테고리 쪽이 스크롤됨 */
+export const PresetGroup = styled.div`
+  display: flex;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  align-items: center;
+  gap: ${theme.space.lg};
+  margin-left: auto;
+`;
+
+/* 카테고리 타일과 완전히 같은 모양·크기 */
+export const PresetTile = styled.button`
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: ${theme.space.sm};
+  padding: ${theme.space.xs};
+`;
+
+export const PresetThumb = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 6.4rem;
+  height: 6.4rem;
+  font-size: 2.8rem;
+  line-height: 1;
+  border-radius: ${theme.radius.sm};
+  background: ${theme.color.bgSoft};
+  border: 2px solid transparent;
+  transition: border-color ${theme.transition.fast}, transform ${theme.transition.fast};
+
+  ${PresetTile}[aria-pressed="true"] & {
+    border-color: ${theme.color.primary};
+  }
+
+  ${PresetTile}:hover & {
+    transform: translateY(-2px);
+  }
+`;
+
+export const PresetLabel = styled.span`
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  color: ${theme.color.sub};
+
+  ${PresetTile}[aria-pressed="true"] & {
+    color: ${theme.color.primary};
+    font-weight: ${theme.fontWeight.semibold};
+  }
+`;
+
+/* 카테고리 줄 — 왼쪽부터 쭉. 좁으면 스크롤은 되지만 스크롤바는 안 보이게 숨긴다 */
 export const CategoryBar = styled.div`
   display: flex;
-  gap: ${theme.space.md};
+  flex: 1 1 0;
+  min-width: 0;
+  gap: ${theme.space.lg};
   overflow-x: auto;
-  padding-bottom: ${theme.space.sm};
-  scrollbar-width: thin;
+
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* 구 Edge/IE */
+  &::-webkit-scrollbar {
+    display: none; /* Chrome·Safari */
+  }
 `;
 
 export const CategoryCard = styled.button`
   display: flex;
-  flex: 1 1 0; /* 남는 폭을 고르게 나눠 가져서 타일이 줄 전체에 고르게 퍼지게 */
-  min-width: 6.4rem;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: center;
   gap: ${theme.space.sm};
@@ -255,9 +370,9 @@ export const CategoryThumb = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 7.2rem;
-  height: 7.2rem;
-  font-size: 3rem;
+  width: 6.4rem;
+  height: 6.4rem;
+  font-size: 2.8rem;
   line-height: 1;
   border-radius: ${theme.radius.sm};
   background: ${({ $active }) => theme.color.bgSoft};

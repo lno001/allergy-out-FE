@@ -11,7 +11,6 @@ import FilterModal from "./FilterModal";
 import {
   PageWrapper,
   RecommendSection,
-  SectionHeading,
   FeaturedCarousel,
   CarouselArrow,
   CarouselDots,
@@ -20,6 +19,7 @@ import {
   FeaturedThumb,
   FeaturedThumbFallback,
   FeaturedBody,
+  FeaturedEyebrow,
   FeaturedTitle,
   FeaturedSpecRow,
   FeaturedSpec,
@@ -30,8 +30,15 @@ import {
   ToolbarRow,
   ToolbarGroup,
   ToolbarEnd,
+  RegisterButton,
   SortToggle,
   SortOption,
+  CategoryRow,
+  RowDivider,
+  PresetGroup,
+  PresetTile,
+  PresetThumb,
+  PresetLabel,
   CategoryBar,
   CategoryCard,
   CategoryThumb,
@@ -119,6 +126,18 @@ const RECIPE_CATEGORIES = [
 const ALL_CATEGORY = RECIPE_CATEGORIES[0].key;
 
 /**
+ * 빠른 필터 프리셋 — 원클릭으로 켜고 끄는 조건 (여러 개 동시 가능).
+ * 백엔드 /filter 에 해당 조건 파라미터가 없어서 지금은 UI + 배선만.
+ * key 가 그대로 params.presets 로 나가고, 백엔드가 처리하게 되면 바로 동작한다.
+ */
+const RECIPE_PRESETS = [
+  { key: "quick", emoji: "⚡", label: "초스피드" }, // 조리시간 ≤ 10분
+  { key: "fewIngredients", emoji: "🥕", label: "간단재료" }, // 재료 ≤ 3개
+  { key: "beginner", emoji: "🔰", label: "초보환영" }, // 난이도 = 쉬움
+  { key: "popular", emoji: "🔥", label: "주간인기" }, // 최근 7일 인기
+];
+
+/**
  * 카드에 보여줄 조리시간/난이도/주재료 — 예시 데이터.
  * 목록 응답엔 이 필드가 없어서, 백엔드에 컬럼이 생길 때까지 recipeNo 로 안정적으로 하나 골라 쓴다.
  * (recipeNo 로 고르니 리렌더해도 값이 안 바뀜)
@@ -145,7 +164,8 @@ const FEATURED_RECIPES = [
   {
     recipeNo: null, // 실제 추천 레시피 번호가 생기면 채운다 → 그때 카드가 링크로 동작
     recipeTitle: "두부 계란찜",
-    recipesImgPath: "https://loremflickr.com/720/540/korean,food?lock=11",
+    recipesImgPath:
+      "https://mblogthumb-phinf.pstatic.net/MjAyMzA2MDFfMTI5/MDAxNjg1NTgxOTMzNzgw.rQq17F2lFcBrUQ9nbzAI0Xh60SNQTHv3aEdbdTicpj8g.UQZnpk5KzlwAa3Q6lNbOvzRpYhRHBmAqnwNbbRoB3jkg.JPEG.jasmin7141/SE-ac51bee9-81ca-44bc-be73-755d95b07a81.jpg?type=w800",
     memberName: "관리자",
     createDate: "2026-09-03",
     mainIngredient: "두부, 계란, 대파",
@@ -157,7 +177,8 @@ const FEATURED_RECIPES = [
   {
     recipeNo: null,
     recipeTitle: "애호박 된장찌개",
-    recipesImgPath: "https://loremflickr.com/720/540/stew,soup?lock=22",
+    recipesImgPath:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJTvYgJlXycDn_WPTtajTPx1IU7A-sAvBX2Mm1fxvwdw&s=10",
     memberName: "관리자",
     createDate: "2026-09-02",
     mainIngredient: "된장, 두부, 애호박",
@@ -169,7 +190,8 @@ const FEATURED_RECIPES = [
   {
     recipeNo: null,
     recipeTitle: "소고기 미역국",
-    recipesImgPath: "https://loremflickr.com/720/540/soup,beef?lock=33",
+    recipesImgPath:
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT9v-N3rKiS6Byto3xXNFTpnXCAD5R3E78uI_PADhsQzg&s=10",
     memberName: "관리자",
     createDate: "2026-09-01",
     mainIngredient: "소고기, 미역, 국간장",
@@ -214,12 +236,12 @@ function FilterIcon() {
   );
 }
 
-/** 사람 아이콘 — "조리법 등록하기" */
-function UserIcon() {
+/** 펜(작성) 아이콘 — "조리법 등록하기" */
+function WriteIcon() {
   return (
     <svg {...iconProps}>
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
   );
 }
@@ -256,6 +278,7 @@ function RecipeListPage() {
   ); // 필터 모달에서 "적용" 한 제외 재료명
   const [sortBy] = useState("latest"); // "latest" | "popular" — 인기순은 백엔드 미지원이라 아직 setter 없음
   const [category, setCategory] = useState(ALL_CATEGORY); // 선택된 카테고리 ("전체" = 미적용)
+  const [presets, setPresets] = useState(/** @type {string[]} */ ([])); // 켜진 빠른 프리셋 key 들
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [featuredIndex, setFeaturedIndex] = useState(0); // 추천 캐러셀 현재 위치
   const [recipes, setRecipes] = useState(/** @type {RecipeListItem[]} */ ([]));
@@ -275,6 +298,7 @@ function RecipeListPage() {
     targetKeyword,
     targetExcludes,
     targetCategory,
+    targetPresets,
   ) => {
     const requestId = ++requestIdRef.current;
     setIsLoading(true);
@@ -287,6 +311,7 @@ function RecipeListPage() {
         params.excludeMaterials = targetExcludes.join(","); // 콤마 1개로 이어 보냄
       if (targetCategory && targetCategory !== ALL_CATEGORY)
         params.category = targetCategory; // 백엔드에 category 파라미터 생기면 그대로 동작 (현재는 무시됨)
+      if (targetPresets?.length) params.presets = targetPresets.join(","); // 빠른 프리셋 — 백엔드 지원 시 동작
       // TODO(백엔드): sort 파라미터 생기면 params.sort = sortBy 연결 (지금은 최신순 고정)
 
       const res = await getFilteredRecipes(params);
@@ -308,21 +333,21 @@ function RecipeListPage() {
   // (/filter 는 인증 선택이라 토큰 없이 보내면 401 이 아니라 게스트 목록 200 이 와서 재시도도 안 걸림)
   useEffect(() => {
     if (!isReady) return;
-    loadRecipes(1, "", [], ALL_CATEGORY);
+    loadRecipes(1, "", [], ALL_CATEGORY, []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isReady]);
 
-  // 인풋에서 엔터(form submit) → 1페이지부터 현재 입력값 + 적용된 필터/카테고리로 조회
+  // 인풋에서 엔터(form submit) → 1페이지부터 현재 입력값 + 적용된 필터/카테고리/프리셋으로 조회
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     setPage(1);
-    loadRecipes(1, keyword, excludeMaterials, category);
+    loadRecipes(1, keyword, excludeMaterials, category, presets);
   };
 
-  // 페이지 이동 → 현재 검색창 값 + 적용된 필터/카테고리 유지한 채 해당 페이지 조회
+  // 페이지 이동 → 현재 검색창 값 + 적용된 필터/카테고리/프리셋 유지한 채 해당 페이지 조회
   const handlePageChange = (nextPage) => {
     setPage(nextPage);
-    loadRecipes(nextPage, keyword, excludeMaterials, category);
+    loadRecipes(nextPage, keyword, excludeMaterials, category, presets);
   };
 
   // 필터 모달 "적용하기" → 선택된 제외 재료로 교체하고 1페이지부터 다시 조회
@@ -330,7 +355,7 @@ function RecipeListPage() {
     setExcludeMaterials(nextExcludes);
     setIsFilterOpen(false);
     setPage(1);
-    loadRecipes(1, keyword, nextExcludes, category);
+    loadRecipes(1, keyword, nextExcludes, category, presets);
   };
 
   // 카테고리 선택 → 1페이지부터 그 카테고리로 조회
@@ -338,7 +363,17 @@ function RecipeListPage() {
   const handleSelectCategory = (nextCategory) => {
     setCategory(nextCategory);
     setPage(1);
-    loadRecipes(1, keyword, excludeMaterials, nextCategory);
+    loadRecipes(1, keyword, excludeMaterials, nextCategory, presets);
+  };
+
+  // 빠른 프리셋 토글 (여러 개 동시 가능) → 1페이지부터 다시 조회
+  const handleTogglePreset = (key) => {
+    const nextPresets = presets.includes(key)
+      ? presets.filter((p) => p !== key)
+      : [...presets, key];
+    setPresets(nextPresets);
+    setPage(1);
+    loadRecipes(1, keyword, excludeMaterials, category, nextPresets);
   };
 
   // 추천 캐러셀 넘기기 (양끝에서 순환)
@@ -361,7 +396,6 @@ function RecipeListPage() {
     <PageWrapper className="container">
       {/* ---------- 오늘의 추천 레시피 (예시 데이터 캐러셀) ---------- */}
       <RecommendSection>
-        <SectionHeading>오늘의 추천 레시피</SectionHeading>
         <FeaturedCarousel>
           <CarouselArrow
             type="button"
@@ -389,6 +423,7 @@ function RecipeListPage() {
               )}
             </FeaturedThumb>
             <FeaturedBody>
+              <FeaturedEyebrow>오늘의 추천 레시피</FeaturedEyebrow>
               <FeaturedTitle>{featured.recipeTitle}</FeaturedTitle>
 
               <FeaturedSpecRow>
@@ -476,28 +511,51 @@ function RecipeListPage() {
                 <SearchIcon />
               </SearchSubmit>
             </SearchForm>
-            <Button as={Link} to={RECIPE_FORM_PATH} variant="primary">
-              <UserIcon />
-              조리법 등록하기
-            </Button>
+            <RegisterButton to={RECIPE_FORM_PATH}>
+              <WriteIcon />
+              조리법 등록
+            </RegisterButton>
           </ToolbarEnd>
         </ToolbarRow>
 
-        {/* 카테고리 — 텍스트 전에 비주얼로 종류가 보이게 (지금은 이모지, 나중에 대표 이미지) */}
-        <CategoryBar role="group" aria-label="카테고리">
-          {RECIPE_CATEGORIES.map(({ key, emoji }) => (
-            <CategoryCard
-              key={key}
-              type="button"
-              $active={key === category}
-              aria-pressed={key === category}
-              onClick={() => handleSelectCategory(key)}
-            >
-              <CategoryThumb aria-hidden="true">{emoji}</CategoryThumb>
-              <CategoryLabel>{key}</CategoryLabel>
-            </CategoryCard>
-          ))}
-        </CategoryBar>
+        {/* 카테고리(왼쪽) + 빠른 프리셋(오른쪽, 카테고리 뒤 빈 공간을 채움) 한 줄 */}
+        <CategoryRow>
+          {/* 카테고리 — 텍스트 전에 비주얼로 종류가 보이게 (지금은 이모지, 나중에 대표 이미지) */}
+          <CategoryBar role="group" aria-label="카테고리">
+            {RECIPE_CATEGORIES.map(({ key, emoji }) => (
+              <CategoryCard
+                key={key}
+                type="button"
+                $active={key === category}
+                aria-pressed={key === category}
+                onClick={() => handleSelectCategory(key)}
+              >
+                <CategoryThumb aria-hidden="true">{emoji}</CategoryThumb>
+                <CategoryLabel>{key}</CategoryLabel>
+              </CategoryCard>
+            ))}
+          </CategoryBar>
+
+          {/* 후식 ↔ 프리셋 구분선 */}
+          <RowDivider aria-hidden="true" />
+
+          {/* 빠른 프리셋 — 카테고리와 같은 이모지 타일. 원클릭 필터(여러 개 동시), 백엔드 지원 전이라 배선만 */}
+          <PresetGroup role="group" aria-label="빠른 필터">
+            {RECIPE_PRESETS.map(({ key, emoji, label }) => (
+              <PresetTile
+                key={key}
+                type="button"
+                aria-label={label}
+                $active={presets.includes(key)}
+                aria-pressed={presets.includes(key)}
+                onClick={() => handleTogglePreset(key)}
+              >
+                <PresetThumb aria-hidden="true">{emoji}</PresetThumb>
+                <PresetLabel>{label}</PresetLabel>
+              </PresetTile>
+            ))}
+          </PresetGroup>
+        </CategoryRow>
       </Toolbar>
 
       {/* ---------- 목록 ---------- */}
