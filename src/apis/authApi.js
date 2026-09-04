@@ -10,11 +10,10 @@ export async function refresh() {
     {},
     { withCredentials: true },
   );
-  const accessToken = res.data?.data?.accessToken;
-  if (!accessToken) {
-    throw res;
+  const accessToken = res.data?.data?.accessToken ?? null;
+  if (accessToken) {
+    setAccessToken(accessToken);
   }
-  setAccessToken(accessToken);
   return accessToken;
 }
 

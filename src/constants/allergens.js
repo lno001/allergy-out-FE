@@ -6,15 +6,13 @@
  *       https://law.go.kr (별표2)
  *
  * key   = 식약처 고시상 표시 대상 분류명 (그대로 사용)
- * value = 그 분류에 해당하는 재료명 문자열 목록 — 레시피 재료(MATERIAL_NAME) 매칭용
+ * value = 그 분류에 해당하는 재료명 문자열 목록 — 레시피 재료(MATERIAL_NAME) 매칭,
+ *         회원 알러지 등록(MEMBER_ALLERGY.MATERIAL_NAME) 저장값으로 함께 사용.
+ *         문자열은 공백 없이 정규화된 형태로 둔다 (등록·MEMBER_ALLERGY 저장 시에도 동일 정규화 전제).
  *
- * [주의]
- * - 식약처 [별표2] 표시 대상은 19개 분류다 (조개류를 굴·전복·홍합으로 세분하면 21).
- *   팀에서 말하던 "22종"과 개수가 다르므로 기준을 한 번 맞춰야 한다.
- * - value 의 재료명 목록은 식약처 고시에 없는 부분으로, 프론트에서 정한 초안이다.
- *   백엔드 알러지 필터가 이 문자열들을 LIKE 로 부분매칭하므로(재료명 기준),
- *   목록 확정 전 팀(member/allergy 담당) 리뷰가 필요하다.
- * - 문자열은 공백 없이 정규화된 형태로 둔다 (등록·MEMBER_ALLERGY 저장 시에도 동일 정규화 전제).
+ * recipe-filter 브랜치(PR #34)에서 먼저 만든 목록을 마이페이지 알러지 담당(승현 님)이
+ * 리뷰 후 그대로 채택 — 알러지 등록 화면(allergy)과 레시피 필터 화면(recipe) 양쪽에서
+ * 같은 분류를 쓰도록 2026-09-02에 공용 위치(src/constants)로 옮김. 문자열은 전부 NVARCHAR2(30) 이내.
  */
 
 /** @type {Record<string, string[]>} */
@@ -151,5 +149,5 @@ export const ALLERGEN_TAXONOMY = {
   잣: ["잣"],
 };
 
-/** 필터 UI 등에서 쓸 분류명 배열 (ALLERGEN_TAXONOMY 의 key 순서 그대로) */
+/** 필터/체크박스 UI 등에서 쓸 분류명 배열 (ALLERGEN_TAXONOMY 의 key 순서 그대로) */
 export const ALLERGEN_CATEGORIES = Object.keys(ALLERGEN_TAXONOMY);
