@@ -1,23 +1,20 @@
-import { useContext, useState } from "react";
+import { useContext, useId, useState } from "react";
 
 import { updateMemberPhone } from "../../../apis/memberApi";
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
+import SplitField from "../../../components/common/SplitField";
 import { ToastContext } from "../../../components/common/ToastProvider";
+import useSanitizedChange from "../../../hooks/useSanitizedChange";
 import useSubmitAction from "../../../hooks/useSubmitAction";
 import { splitFormError } from "../../../utils/apiError";
 import {
-  FieldAdornment,
-  FormStack,
-  PhoneFieldRow,
-  SplitField,
-  SplitFieldError,
-  SplitFieldLabel,
-} from "./ModalForm.styled";
-
-/** 010 뒤 8자리만 입력받는다. 서버 형식은 ^010[0-9]{8}$. */
-const PHONE_LOCAL_LENGTH = 8;
+  MEMBER_HINT,
+  MEMBER_MAX,
+  toPhoneLocal,
+} from "../../../utils/memberValidation";
+import { FieldAdornment, FormStack, PhoneFieldRow } from "./ModalForm.styled";
 
 /**
  * @typedef {Object} EditPhoneModalProps
@@ -30,6 +27,7 @@ const PHONE_LOCAL_LENGTH = 8;
 /**
  * 연락처 변경 모달 — PATCH /api/members/phone
  * "010" 은 고정 프리픽스로 두고 뒤 8자리(숫자만)만 입력받는다. 입력칸 Enter → 변경하기.
+ * 숫자만·8자리 제한은 앱단(toPhoneLocal + maxLength), 형식 문구는 서버(^010[0-9]{8}$)에 맡긴다.
  *
  * EditEmailModal과 같은 이유로 인증(OTP) 단계 없이 바로 PATCH한다.
  * 인증 API가 생기면 아래 주석 블록을 되살릴 것.
@@ -39,32 +37,16 @@ const PHONE_LOCAL_LENGTH = 8;
 function EditPhoneModal({ isOpen, onClose, currentPhone, onSuccess }) {
   const showToast = useContext(ToastContext);
   const { submitting, run } = useSubmitAction();
+  const phoneId = useId();
   const [phone, setPhone] = useState(""); // 010 을 뺀 8자리
   const [error, setError] = useState("");
 
-  const canSubmit = phone.length === PHONE_LOCAL_LENGTH;
+  const canSubmit = phone.length === MEMBER_MAX.phoneLocal;
 
-  // 숫자만 통과. "010xxxxxxxx"(11자리)를 붙여넣으면 앞 010 을 떼고 뒤 8자만 취한다.
-  const handlePhoneChange = (e) => {
-    let digits = e.target.value.replace(/\D/g, "");
-    if (digits.length === 11 && digits.startsWith("010")) {
-      digits = digits.slice(3);
-    }
-    setPhone(digits.slice(0, PHONE_LOCAL_LENGTH));
+  const phoneChange = useSanitizedChange(toPhoneLocal, (v) => {
+    setPhone(v);
     if (error) setError("");
-  };
-
-  // // TODO(연락처 인증 API 생기면 되살리기)
-  // const [verificationCode, setVerificationCode] = useState("");
-  // const [codeError, setCodeError] = useState("");
-  //
-  // const handleRequestVerification = async () => {
-  //   await requestPhoneVerification(phone); // apis/memberApi.js 에 추가 필요
-  // };
-  //
-  // const handleVerifyCode = async () => {
-  //   await verifyPhoneCode(phone, verificationCode); // apis/memberApi.js 에 추가 필요
-  // };
+  });
 
   const handleClose = () => {
     setPhone("");
@@ -115,21 +97,29 @@ function EditPhoneModal({ isOpen, onClose, currentPhone, onSuccess }) {
         }}
       >
         <FormStack>
-          <Input label="현재 연락처" value={currentPhone} disabled readOnly />
-          <SplitField>
-            <SplitFieldLabel $required>새로운 연락처</SplitFieldLabel>
-            <PhoneFieldRow>
-              <FieldAdornment>010</FieldAdornment>
-              <Input
-                aria-label="새로운 연락처"
-                inputMode="numeric"
-                maxLength={PHONE_LOCAL_LENGTH}
-                placeholder="8자리 숫자"
-                value={phone}
-                onChange={handlePhoneChange}
-              />
-            </PhoneFieldRow>
-            {error && <SplitFieldError>{error}</SplitFieldError>}
+          <Input label="현재 연락처" value={currentPhone} readOnly />
+          <SplitField
+            label="새로운 연락처"
+            htmlFor={phoneId}
+            required
+            error={error}
+          >
+            {({ describedBy, invalid, required }) => (
+              <PhoneFieldRow>
+                <FieldAdornment>010</FieldAdornment>
+                <Input
+                  id={phoneId}
+                  inputMode="numeric"
+                  maxLength={MEMBER_MAX.phoneLocal}
+                  placeholder={MEMBER_HINT.phone}
+                  value={phone}
+                  {...phoneChange}
+                  aria-required={required}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                />
+              </PhoneFieldRow>
+            )}
           </SplitField>
         </FormStack>
 

@@ -5,13 +5,13 @@ import Alert from "../../components/common/Alert";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
+import PasswordToggle from "../../components/common/PasswordToggle";
 import { useAuth } from "../../hooks/useAuth";
 import {
   LoginFields,
   LoginForm,
   LoginPageWrap,
   LoginTitle,
-  PasswordToggle,
   SignupLink,
   SignupLinkWrap,
 } from "./LoginPage.styled";
@@ -86,14 +86,9 @@ function LoginPage() {
             autoComplete="current-password"
             suffix={
               <PasswordToggle
-                type="button"
-                onClick={handleTogglePassword}
-                aria-label={
-                  isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"
-                }
-              >
-                {isPasswordVisible ? "on" : "off"}
-              </PasswordToggle>
+                visible={isPasswordVisible}
+                onToggle={handleTogglePassword}
+              />
             }
           />
         </LoginFields>

@@ -4,9 +4,11 @@ import { deleteMember } from "../../../apis/memberApi";
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
+import PasswordToggle from "../../../components/common/PasswordToggle";
 import { ToastContext } from "../../../components/common/ToastProvider";
 import useSubmitAction from "../../../hooks/useSubmitAction";
 import { splitFormError } from "../../../utils/apiError";
+import { MEMBER_MAX } from "../../../utils/memberValidation";
 import { Description, FormStack } from "./ModalForm.styled";
 
 /**
@@ -82,15 +84,14 @@ function WithdrawModal({ isOpen, onClose, onSuccess }) {
           placeholder="비밀번호"
           value={memberPwd}
           onChange={(e) => setMemberPwd(e.target.value)}
+          maxLength={MEMBER_MAX.memberPwd}
+          autoComplete="current-password"
           error={error}
           suffix={
-            <button
-              type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 표시"}
-            >
-              {showPassword ? "🙈" : "👁"}
-            </button>
+            <PasswordToggle
+              visible={showPassword}
+              onToggle={() => setShowPassword((prev) => !prev)}
+            />
           }
         />
       </FormStack>
