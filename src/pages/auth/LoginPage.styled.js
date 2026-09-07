@@ -30,9 +30,9 @@ export const LoginFields = styled.div`
   flex-direction: column;
   gap: ${theme.space.xl};
 
+  /* 눈모양 토글 자리는 공용 StyledInput 의 $hasSuffix 가 확보한다(하드코딩 X). */
   input {
     height: 52px;
-    padding-right: 4.8rem;
     background-color: ${theme.color.primary50};
     border-color: transparent;
   }

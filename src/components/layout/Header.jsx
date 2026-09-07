@@ -2,14 +2,12 @@ import { useNavigate } from "react-router-dom";
 
 import Avatar from "../common/Avatar";
 import Button from "../common/Button";
+import logoLockup from "../../assets/logo-symbol.png";
 import {
   HeaderBar,
   HeaderInner,
-  LogoIcon,
   LogoLink,
-  LogoText,
-  LogoTextMain,
-  LogoTextSub,
+  LogoLockup,
   LogoutButton,
   Nav,
   NavItem,
@@ -50,11 +48,7 @@ function Header({ user = null, onLogout }) {
     <HeaderBar>
       <HeaderInner>
         <LogoLink to="/">
-          <LogoIcon src="/favicon.svg" alt="" />
-          <LogoText>
-            <LogoTextMain>알러지 아웃</LogoTextMain>
-            <LogoTextSub>ALLERGY OUT</LogoTextSub>
-          </LogoText>
+          <LogoLockup src={logoLockup} alt="알러지 아웃" />
         </LogoLink>
 
         {!user && (

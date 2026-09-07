@@ -78,6 +78,7 @@ function Input({
         <StyledInput
           id={inputId}
           $hasError={!!error}
+          $hasSuffix={!!suffix}
           aria-required={required || undefined}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}

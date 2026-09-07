@@ -28,7 +28,7 @@ export const EMAIL_MAX = 50;
 /** 입력칸 placeholder 로 넣는 짧은 규칙 안내 (에러 메시지 아님, FE UI 카피). */
 export const MEMBER_HINT = {
   memberId: "영문 소문자·숫자 4~20자",
-  memberPwd: "영문·숫자 포함 8~30자 (특수문자 가능, 공백 불가)",
+  memberPwd: "영문·숫자 포함 8~30자, 공백 불가",
   memberName: "공백 없이 한글·영문 2~30자",
   phone: "뒤 8자리 숫자",
 };

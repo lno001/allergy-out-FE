@@ -23,31 +23,13 @@ export const HeaderInner = styled.div`
 export const LogoLink = styled(Link)`
   display: inline-flex;
   align-items: center;
-  gap: ${theme.space.sm};
 `;
 
-export const LogoIcon = styled.img`
-  width: ${theme.space["3xl"]};
+/* 심볼 + 워드마크가 한 파일에 든 가로형 락업(약 3:1). 높이만 고정하고 너비는 비율대로. */
+export const LogoLockup = styled.img`
+  display: block;
   height: ${theme.space["3xl"]};
-`;
-
-export const LogoText = styled.span`
-  display: flex;
-  flex-direction: column;
-  line-height: ${theme.lineHeight.tight};
-`;
-
-export const LogoTextMain = styled.span`
-  font-size: ${theme.fontSize.md};
-  font-weight: ${theme.fontWeight.bold};
-  color: ${theme.color.text};
-`;
-
-export const LogoTextSub = styled.span`
-  font-size: ${theme.fontSize.xs};
-  font-weight: ${theme.fontWeight.medium};
-  color: ${theme.color.sub};
-  letter-spacing: 0.05em;
+  width: auto;
 `;
 
 export const Nav = styled.nav`
