@@ -73,18 +73,10 @@ function AllergyManagePage() {
     if (result.msg) showToast(result.msg, result.ok ? "success" : "danger");
   };
 
-  /** "묶음" 버튼 전용 — 이미 전부 등록돼 있으면 한 번 더 눌렀을 때 전체 해제(토글).
-   *  상한(100개)에 걸려 일부만 추가된 채로 더 못 채우는 상태라면, "전부 선택"이 아니라서
-   *  계속 "추가"로만 판단돼 넘친 항목을 뺄 방법이 없었다 — 그래서 상한 때문에 더 추가할
-   *  여지가 없는데 이 묶음 항목이 하나라도 있는 경우도 "해제"로 취급한다.
-   *  (상한에 안 걸린 정상적인 부분 선택은 그대로 "나머지 채우기"로 동작 — 동작 안 바뀜) */
+  /** "묶음" 버튼 전용 — 이미 전부 등록돼 있으면 한 번 더 눌렀을 때 전체 해제(토글) */
   const handleBundleToggle = (bundle) => {
     const allSelected = bundle.items.every((item) => selected.has(item));
-    const cappedPartial =
-      !allSelected &&
-      selected.size >= MAX_ALLERGY_COUNT &&
-      bundle.items.some((item) => selected.has(item));
-    if (allSelected || cappedPartial) {
+    if (allSelected) {
       removeMany(bundle.items);
       return;
     }
@@ -120,13 +112,7 @@ function AllergyManagePage() {
       return;
     }
     const items = ALLERGEN_TAXONOMY[category];
-    // handleBundleToggle과 같은 이유 — 상한에 걸려 하위 품목 일부만 등록된 채 더 못
-    // 채우는 상태도 체크 해제로 전부 지울 수 있어야 한다.
-    const cappedPartial =
-      !isCategorySelected(category) &&
-      selected.size >= MAX_ALLERGY_COUNT &&
-      items.some((item) => selected.has(item));
-    if (isCategorySelected(category) || cappedPartial) {
+    if (isCategorySelected(category)) {
       removeMany(items);
       setExpanded(category, false);
     } else {
