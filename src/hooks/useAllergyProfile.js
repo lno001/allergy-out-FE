@@ -6,6 +6,11 @@ import { getMyAllergies, updateMyAllergies } from "../apis/allergyApi";
  *  여기서 막는 건 UX 보조일 뿐이고, 진짜 검증은 서버가 함(save 실패 시 서버 메시지를 그대로 보여줌). */
 export const MAX_ALLERGY_COUNT = 200;
 
+/** "직접 추가" 재료명에 허용하는 문자 — 한글/영문/숫자/공백과 실제 재료명에 쓰이는
+ *  구두점(· - ( ))만 허용. 백엔드(AllergyService.validateAllergyList)와 동일한 규칙 —
+ *  이모지 등 이상한 문자가 재료명으로 등록되는 걸 막는다. */
+const ALLOWED_MATERIAL_NAME = /^[가-힣a-zA-Z0-9\s·\-()]+$/;
+
 /**
  * 마이페이지 "알러지 필터 관리" 화면의 상태를 관리하는 훅.
  * - 마운트 시 서버에 저장된 알러지 목록을 불러와 체크 상태(Set)로 반영
@@ -71,11 +76,15 @@ export function useAllergyProfile() {
     return { ok: true, msg: "" };
   }, [selected]);
 
-  /** "직접 추가" 입력창 전용 — 빈 값/30자 초과/중복/상한 순으로 검사 후 실패 사유를 반환 */
+  /** "직접 추가" 입력창 전용 — 빈 값/허용 문자/30자 초과/중복/상한 순으로 검사 후 실패 사유를 반환.
+   *  이모지 등 엉뚱한 문자가 재료명으로 들어가는 걸 막는다(백엔드도 동일하게 막음 — 여기는 UX 보조). */
   const addCustom = useCallback((materialName) => {
     const trimmed = materialName.trim();
     if (!trimmed) {
       return { ok: false, msg: "재료명을 입력해주세요." };
+    }
+    if (!ALLOWED_MATERIAL_NAME.test(trimmed)) {
+      return { ok: false, msg: "재료명은 한글, 영문, 숫자, 공백, · - ( ) 만 사용할 수 있습니다." };
     }
     if (trimmed.length > 30) {
       return { ok: false, msg: "알러지 항목은 각각 30자 이내로 입력해주세요." };
