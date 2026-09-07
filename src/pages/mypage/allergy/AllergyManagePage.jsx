@@ -73,20 +73,25 @@ function AllergyManagePage() {
     if (result.msg) showToast(result.msg, result.ok ? "success" : "danger");
   };
 
-  /** "묶음" 버튼 전용 — 이 묶음 항목이 하나라도 등록돼 있으면 눌렀을 때 전체 해제(토글),
-   *  하나도 없으면 추가. "전부 선택"일 때만 해제로 본 예전 방식은, 상한(100개)에 걸려
-   *  일부만 추가된 상태에서 다른 항목들을 지워 자리가 다시 생기는 순간 "전부 선택"도
-   *  아니고 "상한도 아닌" 애매한 상태가 되면서 여전히 못 뺐다(추가 모드로 되돌아감).
-   *  "하나라도 있으면 전부 해제"로 단순화해서 언제 눌러도 확실하게 비워지게 한다. */
+  /** "묶음" 버튼 전용 — 이미 전부 등록돼 있으면 한 번 더 눌렀을 때 전체 해제(토글).
+   *  상한(100개)에 걸려 일부만 추가된 채로 더 못 채우는 상태라면, "전부 선택"이 아니라서
+   *  계속 "추가"로만 판단돼 넘친 항목을 뺄 방법이 없었다 — 그래서 상한 때문에 더 추가할
+   *  여지가 없는데 이 묶음 항목이 하나라도 있는 경우도 "해제"로 취급한다.
+   *  (상한에 안 걸린 정상적인 부분 선택은 그대로 "나머지 채우기"로 동작 — 동작 안 바뀜) */
   const handleBundleToggle = (bundle) => {
-    if (isBundleSelected(bundle)) {
+    const allSelected = bundle.items.every((item) => selected.has(item));
+    const cappedPartial =
+      !allSelected &&
+      selected.size >= MAX_ALLERGY_COUNT &&
+      bundle.items.some((item) => selected.has(item));
+    if (allSelected || cappedPartial) {
       removeMany(bundle.items);
       return;
     }
     handleQuickAdd(bundle.items);
   };
 
-  const isBundleSelected = (bundle) => bundle.items.some((item) => selected.has(item));
+  const isBundleSelected = (bundle) => bundle.items.every((item) => selected.has(item));
 
   /** 하위 품목이 그 분류명 자체뿐이면(호두→["호두"]) 펼칠 게 없어 일반 체크박스로 취급 */
   const hasSubItems = (category) => {
@@ -94,12 +99,9 @@ function AllergyManagePage() {
     return items.length > 1 || items[0] !== category;
   };
 
-  /** handleBundleToggle/isBundleSelected와 같은 이유로 "전부"가 아니라 "하나라도"를 기준으로
-   *  삼는다 — 상한에 걸려 하위 품목 일부만 등록된 채 더 못 채우는 상태도 체크 해제 한 번으로
-   *  확실히 다 지워지게 하기 위함. */
   const isCategorySelected = (category) => {
     if (!hasSubItems(category)) return selected.has(category);
-    return ALLERGEN_TAXONOMY[category].some((item) => selected.has(item));
+    return ALLERGEN_TAXONOMY[category].every((item) => selected.has(item));
   };
 
   const setExpanded = (category, expand) => {
@@ -118,7 +120,13 @@ function AllergyManagePage() {
       return;
     }
     const items = ALLERGEN_TAXONOMY[category];
-    if (isCategorySelected(category)) {
+    // handleBundleToggle과 같은 이유 — 상한에 걸려 하위 품목 일부만 등록된 채 더 못
+    // 채우는 상태도 체크 해제로 전부 지울 수 있어야 한다.
+    const cappedPartial =
+      !isCategorySelected(category) &&
+      selected.size >= MAX_ALLERGY_COUNT &&
+      items.some((item) => selected.has(item));
+    if (isCategorySelected(category) || cappedPartial) {
       removeMany(items);
       setExpanded(category, false);
     } else {
