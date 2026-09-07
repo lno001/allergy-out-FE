@@ -674,3 +674,36 @@ export const ToastIcon = styled.span`
   color: ${theme.color.white};
   background-color: ${({ $variant }) => VARIANT_ICON_BG[$variant] || VARIANT_ICON_BG.info};
 `;
+
+/* ============================================================
+   SplitField — 라벨 + (프리픽스가 있는) 입력 행 + 에러를 묶는 셸
+   에러를 입력 행 "밖"에 둬서 에러가 떠도 행 안쪽 칸(010 / @) 정렬이 안 흔들린다.
+   행 그리드 배치는 화면마다 달라서 쓰는 쪽에서 children 으로 넘긴다.
+   JSX·aria 배선은 components/common/SplitField.jsx.
+   ============================================================ */
+
+export const SplitFieldWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.space.sm};
+`;
+
+export const SplitFieldLabel = styled.label`
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.semibold};
+  color: ${theme.color.text};
+
+  ${({ $required }) =>
+    $required &&
+    css`
+      &::after {
+        content: ' *';
+        color: ${theme.color.danger};
+      }
+    `}
+`;
+
+export const SplitFieldError = styled.span`
+  font-size: ${theme.fontSize.xs};
+  color: ${theme.color.danger600};
+`;
