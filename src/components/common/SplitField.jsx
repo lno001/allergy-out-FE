@@ -10,6 +10,7 @@ import {
  * @typedef {Object} SplitFieldA11y
  * @property {string|undefined} describedBy - 에러가 있을 때 에러 문구의 id. 없으면 undefined.
  * @property {true|undefined} invalid - 에러가 있을 때 true. 없으면 undefined.
+ * @property {true|undefined} required - required prop 이 true 면 true. 없으면 undefined.
  *
  * @typedef {Object} SplitFieldProps
  * @property {string} label - 행 위에 붙는 라벨.
@@ -48,6 +49,7 @@ function SplitField({ label, htmlFor, required = false, error, children }) {
   const a11y = {
     describedBy: hasError ? errorId : undefined,
     invalid: hasError ? true : undefined,
+    required: required || undefined,
   };
 
   return (

@@ -7,11 +7,7 @@ import Modal from "../../../components/common/Modal";
 import { ToastContext } from "../../../components/common/ToastProvider";
 import useSubmitAction from "../../../hooks/useSubmitAction";
 import { splitFormError } from "../../../utils/apiError";
-import {
-  MEMBER_HINT,
-  MEMBER_MAX,
-  validateMemberField,
-} from "../../../utils/memberValidation";
+import { MEMBER_HINT, MEMBER_MAX } from "../../../utils/memberValidation";
 import { FormStack } from "./ModalForm.styled";
 
 /**
@@ -41,13 +37,8 @@ function EditNameModal({ isOpen, onClose, currentName, onSuccess }) {
   };
 
   const handleSubmit = () => {
-    if (submitting) return;
     const trimmed = name.trim();
-    const msg = validateMemberField("memberName", trimmed);
-    if (msg) {
-      setError(msg);
-      return;
-    }
+    if (!trimmed || submitting) return; // Enter 등 조건 안 맞을 때 방지
     setError("");
     run(
       async () => {

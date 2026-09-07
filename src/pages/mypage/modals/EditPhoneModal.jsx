@@ -13,7 +13,6 @@ import {
   MEMBER_HINT,
   MEMBER_MAX,
   toPhoneLocal,
-  validatePhone,
 } from "../../../utils/memberValidation";
 import { FieldAdornment, FormStack, PhoneFieldRow } from "./ModalForm.styled";
 
@@ -57,11 +56,6 @@ function EditPhoneModal({ isOpen, onClose, currentPhone, onSuccess }) {
 
   const handleSubmit = () => {
     if (!canSubmit || submitting) return; // Enter 등 조건 안 맞을 때 방지
-    const msg = validatePhone(phone);
-    if (msg) {
-      setError(msg);
-      return;
-    }
     setError("");
     run(
       async () => {
@@ -110,7 +104,7 @@ function EditPhoneModal({ isOpen, onClose, currentPhone, onSuccess }) {
             required
             error={error}
           >
-            {({ describedBy, invalid }) => (
+            {({ describedBy, invalid, required }) => (
               <PhoneFieldRow>
                 <FieldAdornment>010</FieldAdornment>
                 <Input
@@ -120,6 +114,7 @@ function EditPhoneModal({ isOpen, onClose, currentPhone, onSuccess }) {
                   placeholder={MEMBER_HINT.phone}
                   value={phone}
                   {...phoneChange}
+                  aria-required={required}
                   aria-describedby={describedBy}
                   aria-invalid={invalid}
                 />

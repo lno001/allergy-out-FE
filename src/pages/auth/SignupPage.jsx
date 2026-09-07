@@ -14,11 +14,12 @@ import {
   EMAIL_MAX,
   MEMBER_HINT,
   MEMBER_MAX,
+  PASSWORD_CONFIRM_MISMATCH,
   buildEmail,
-  sanitizeEmail,
+  sanitizeEmailDomain,
+  sanitizeEmailLocal,
   sanitizeMemberId,
   toPhoneLocal,
-  validateSignupForm,
 } from "../../utils/memberValidation";
 import { PasswordToggle } from "./LoginPage.styled";
 import {
@@ -54,7 +55,7 @@ const INITIAL_FIELD_ERRORS = {
 
 /**
  * 서버 검증 실패 응답의 data({ 필드: msg })를 폼 필드 에러로 옮긴다.
- * 제출 시 validateSignupForm 이 못 잡은 경우(또는 중복 등 서버만 아는 것)의 최종 표시.
+ * 길이·형식 위반 문구는 FE 가 만들지 않으므로, 이 맵이 필드 에러의 유일한 출처다.
  */
 function getFieldErrors(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -88,19 +89,16 @@ function SignupPage() {
   const phoneFieldId = useId();
   const emailLocalId = useId();
 
-  const nextEmail = buildEmail(form.emailId, form.emailDomain);
-
-  // 제출 게이트: 필수값이 채워졌는지만 본다.
-  // 길이(합산 50자 포함)·형식 위반은 여기서 막지 않고 제출 → 서버가 email 필드 에러로 돌려준다.
-  // (각 칸 maxLength 50 은 유지 — 한 칸이 통째로 폭주하는 것만 방지)
+  // 제출 게이트: 필수값이 채워졌는지만 본다. 길이·형식 위반은 제출 → 서버 400 이 알려준다.
+  // memberName 만 정제가 없어 공백뿐인 입력을 .trim() 으로 걸러낸다.
   const canSubmit =
-    Boolean(form.memberId.trim()) &&
+    Boolean(form.memberId) &&
     Boolean(form.memberPwd) &&
     Boolean(form.memberPwdCheck) &&
     Boolean(form.memberName.trim()) &&
     form.phone.length === MEMBER_MAX.phoneLocal &&
-    Boolean(form.emailId.trim()) &&
-    Boolean(form.emailDomain.trim());
+    Boolean(form.emailId) &&
+    Boolean(form.emailDomain);
 
   // 필드 하나를 갱신하고, 그 필드에 떠 있던 에러를 지운다.
   const updateField = (name, value) => {
@@ -112,7 +110,7 @@ function SignupPage() {
     );
   };
 
-  // 정제 없는 필드(비번·비번확인·이름) — 형식은 제출 시 validateSignupForm 이 본다.
+  // 정제 없는 필드(비번·비번확인·이름) — 길이·형식 위반은 제출 → 서버 400 이 알려준다.
   // 이름은 한글이 유효하므로 여기서 손대지 않는다.
   const handleChange = (event) =>
     updateField(event.target.name, event.target.value);
@@ -121,10 +119,10 @@ function SignupPage() {
   const memberIdChange = useSanitizedChange(sanitizeMemberId, (v) =>
     updateField("memberId", v),
   );
-  const emailIdChange = useSanitizedChange(sanitizeEmail, (v) =>
+  const emailIdChange = useSanitizedChange(sanitizeEmailLocal, (v) =>
     updateField("emailId", v),
   );
-  const emailDomainChange = useSanitizedChange(sanitizeEmail, (v) =>
+  const emailDomainChange = useSanitizedChange(sanitizeEmailDomain, (v) =>
     updateField("emailDomain", v),
   );
   const phoneChange = useSanitizedChange(toPhoneLocal, (v) =>
@@ -140,20 +138,25 @@ function SignupPage() {
     if (!canSubmit || isSubmitting) return;
 
     setErrorMsg("");
+    setFieldErrors(INITIAL_FIELD_ERRORS);
 
-    // 제출 시 BE 규격(RULES/MESSAGES)으로 먼저 검증 — 통과해야 서버로 보낸다.
-    const validationErrors = validateSignupForm(form);
-    setFieldErrors({ ...INITIAL_FIELD_ERRORS, ...validationErrors });
-    if (Object.keys(validationErrors).length > 0) return;
+    // 서버가 확인 필드를 받지 않으므로 이 검사만 FE 가 한다. 나머지 형식·길이는 서버 400.
+    if (form.memberPwd !== form.memberPwdCheck) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        memberPwdCheck: PASSWORD_CONFIRM_MISMATCH,
+      }));
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       await signup({
-        memberId: form.memberId.trim(),
+        memberId: form.memberId,
         memberPwd: form.memberPwd,
         memberName: form.memberName.trim(),
         phone: `010${form.phone}`,
-        email: nextEmail,
+        email: buildEmail(form.emailId, form.emailDomain),
       });
       setIsSuccessOpen(true);
     } catch (err) {
@@ -199,6 +202,7 @@ function SignupPage() {
         <SignupFields>
           <Input
             label="아이디"
+            required
             name="memberId"
             value={form.memberId}
             {...memberIdChange}
@@ -209,6 +213,7 @@ function SignupPage() {
           />
           <Input
             label="비밀번호"
+            required
             name="memberPwd"
             type={isPasswordVisible ? "text" : "password"}
             value={form.memberPwd}
@@ -231,6 +236,7 @@ function SignupPage() {
           />
           <Input
             label="비밀번호 확인"
+            required
             name="memberPwdCheck"
             type={isPasswordVisible ? "text" : "password"}
             value={form.memberPwdCheck}
@@ -243,10 +249,11 @@ function SignupPage() {
 
           <SplitField
             label="전화번호"
+            required
             htmlFor={phoneFieldId}
             error={fieldErrors.phone}
           >
-            {({ describedBy, invalid }) => (
+            {({ describedBy, invalid, required }) => (
               <PhoneRow>
                 <FieldPrefix>010</FieldPrefix>
                 <Input
@@ -258,6 +265,7 @@ function SignupPage() {
                   placeholder={MEMBER_HINT.phone}
                   maxLength={MEMBER_MAX.phoneLocal}
                   autoComplete="tel-national"
+                  aria-required={required}
                   aria-describedby={describedBy}
                   aria-invalid={invalid}
                 />
@@ -267,6 +275,7 @@ function SignupPage() {
 
           <Input
             label="이름"
+            required
             name="memberName"
             value={form.memberName}
             onChange={handleChange}
@@ -278,10 +287,11 @@ function SignupPage() {
 
           <SplitField
             label="이메일"
+            required
             htmlFor={emailLocalId}
             error={fieldErrors.email}
           >
-            {({ describedBy, invalid }) => (
+            {({ describedBy, invalid, required }) => (
               <EmailRow>
                 <Input
                   id={emailLocalId}
@@ -291,6 +301,7 @@ function SignupPage() {
                   placeholder="이메일 아이디"
                   maxLength={EMAIL_MAX}
                   autoComplete="off"
+                  aria-required={required}
                   aria-describedby={describedBy}
                   aria-invalid={invalid}
                 />
@@ -303,6 +314,7 @@ function SignupPage() {
                   placeholder="naver.com"
                   maxLength={EMAIL_MAX}
                   autoComplete="off"
+                  aria-required={required}
                   aria-describedby={describedBy}
                   aria-invalid={invalid}
                 />

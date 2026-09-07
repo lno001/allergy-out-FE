@@ -8,10 +8,9 @@ import { ToastContext } from "../../../components/common/ToastProvider";
 import useSubmitAction from "../../../hooks/useSubmitAction";
 import { splitFormError } from "../../../utils/apiError";
 import {
+  MEMBER_HINT,
   MEMBER_MAX,
-  MESSAGES,
   PASSWORD_CONFIRM_MISMATCH,
-  validateMemberField,
 } from "../../../utils/memberValidation";
 import { FormStack, HelperBox, HelperBoxTitle } from "./ModalForm.styled";
 
@@ -37,9 +36,9 @@ function PasswordToggle({ visible, onToggle }) {
 /**
  * 비밀번호 변경 모달 — PATCH /api/members/memberpwd
  *
- * 앱단은 maxLength(30) + 제출 시 BE 규격(RULES.password) 검증 + "새 비밀번호 ≠ 확인"(서버가
- * 확인 필드를 안 받아 FE 만 판정, PASSWORD_CONFIRM_MISMATCH)을 본다. 최종 판정은 서버.
- * "현재 비밀번호"는 형식검증 없이 빈값만 본다(해시 대조는 서버). HelperBox = BE 형식 안내 문구.
+ * 앱단은 maxLength(30) + "새 비밀번호 ≠ 확인"(서버가 확인 필드를 안 받아 FE 만 판정,
+ * PASSWORD_CONFIRM_MISMATCH)만 본다. 길이·형식 위반 문구는 서버 400 을 그대로 쓴다.
+ * HelperBox 는 정적 안내 카피(MEMBER_HINT).
  *
  * @param {EditPasswordModalProps} props
  */
@@ -68,20 +67,8 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
 
   const handleSubmit = () => {
     if (!canSubmit || submitting) return; // Enter 등 조건 안 맞을 때 방지
-
-    const nextErrors = {};
-    const curMsg = validateMemberField("currentPassword", currentPassword);
-    if (curMsg) nextErrors.currentPassword = curMsg;
-
-    const newMsg = validateMemberField("newPassword", newPassword);
-    if (newMsg) {
-      nextErrors.newPassword = newMsg;
-    } else if (newPassword !== confirmPassword) {
-      nextErrors.confirmPassword = PASSWORD_CONFIRM_MISMATCH;
-    }
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
+    if (newPassword !== confirmPassword) {
+      setErrors({ confirmPassword: PASSWORD_CONFIRM_MISMATCH });
       return;
     }
     setErrors({});
@@ -177,7 +164,7 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
           />
           <HelperBox>
             <HelperBoxTitle>💡 비밀번호 안전 규칙</HelperBoxTitle>
-            {MESSAGES.newPassword.format}
+            {MEMBER_HINT.memberPwd}
           </HelperBox>
         </FormStack>
 
