@@ -53,7 +53,7 @@ import { QUICK_BUNDLES } from "./allergyQuickAdd";
 function AllergyManagePage() {
   const showToast = useContext(ToastContext);
   const {
-    selected, toggle, addCustom, addMany, remove, removeMany, save, isLoading, isSaving, error,
+    selected, toggle, addCustom, addMany, remove, removeMany, clearAll, save, isLoading, isSaving, error,
   } = useAllergyProfile();
   const [customInput, setCustomInput] = useState("");
   const [expandedCategories, setExpandedCategories] = useState(() => new Set());
@@ -130,6 +130,13 @@ function AllergyManagePage() {
   const handleSave = async () => {
     const result = await save();
     showToast(result.msg, result.ok ? "success" : "danger");
+  };
+
+  /** "필터 초기화" — 선택된 항목을 전부 지워 0개로 만든다. 실제 서버 반영은 "필터 저장하기"를
+   *  다시 눌러야 되므로, 여기서는 save()를 호출하지 않는다(실수로 지웠을 때 되돌릴 여지를 둠). */
+  const handleClearAll = () => {
+    clearAll();
+    showToast("선택한 필터를 모두 지웠어요. 저장하려면 '필터 저장하기'를 눌러주세요.", "info");
   };
 
   if (isLoading) {
@@ -265,6 +272,14 @@ function AllergyManagePage() {
       <SectionDivider />
       <Section>
         <FooterRow>
+          <Button
+            variant="secondary"
+            onClick={handleClearAll}
+            disabled={isSaving || selectedList.length === 0}
+            size="lg"
+          >
+            필터 초기화
+          </Button>
           <Button onClick={handleSave} loading={isSaving} size="lg">
             필터 저장하기
           </Button>

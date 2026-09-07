@@ -24,6 +24,7 @@ const ALLOWED_MATERIAL_NAME = /^[가-힣a-zA-Z0-9\s·\-()]+$/;
  *   addMany: (materialNames: string[]) => { ok: boolean, msg: string, addedCount: number },
  *   remove: (materialName: string) => void,
  *   removeMany: (materialNames: string[]) => void,
+ *   clearAll: () => void,
  *   save: () => Promise<{ ok: boolean, msg: string }>,
  *   isLoading: boolean,
  *   isSaving: boolean,
@@ -110,7 +111,7 @@ export function useAllergyProfile() {
   }, []);
 
   /**
-   * "빠른 추가"(5대 알러지·견과류·갑각류 등 묶음/계통 버튼) 전용 — 이미 있는 항목은 조용히 건너뛰고,
+   * "빠른 추가"(우유·계란·견과류 등 묶음/계통 버튼) 전용 — 이미 있는 항목은 조용히 건너뛰고,
    * 남은 자리(상한 - 현재 개수)만큼만 채운다. 하나도 못 채우면 실패로, 일부만 채우면 안내 메시지로 알려준다.
    */
   const addMany = useCallback((materialNames) => {
@@ -145,6 +146,12 @@ export function useAllergyProfile() {
     });
   }, []);
 
+  /** "필터 초기화" 버튼 전용 — 지금 화면에서 선택된 항목을 전부 지워 0개로 만든다.
+   *  저장(save)까지는 안 하므로, 실제로 반영하려면 이 상태에서 "필터 저장하기"를 눌러야 한다. */
+  const clearAll = useCallback(() => {
+    setSelected(new Set());
+  }, []);
+
   const save = useCallback(async () => {
     setIsSaving(true);
     try {
@@ -158,5 +165,5 @@ export function useAllergyProfile() {
     }
   }, [selected]);
 
-  return { selected, toggle, addCustom, addMany, remove, removeMany, save, isLoading, isSaving, error };
+  return { selected, toggle, addCustom, addMany, remove, removeMany, clearAll, save, isLoading, isSaving, error };
 }

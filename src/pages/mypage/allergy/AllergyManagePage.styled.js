@@ -252,4 +252,5 @@ export const OptionSubCheckbox = styled.input.attrs({ type: "checkbox" })`
 export const FooterRow = styled.div`
   display: flex;
   justify-content: flex-end;
+  gap: ${theme.space.md};
 `;
