@@ -28,30 +28,10 @@ export const InlineFieldRow = styled.div`
   }
 `;
 
-/* 라벨을 행 위로 빼고(SplitField/SplitFieldLabel), 그 아래에서 프리픽스·구분자와 입력칸을 나란히 둔다.
-   에러도 개별 Input이 아니라 그룹 아래 한 줄(SplitFieldError)로 표시해 행 정렬이 안 흔들리게 한다. */
-export const SplitField = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${theme.space.sm};
-`;
+/* 라벨·에러 셸은 공용 컴포넌트 components/common/SplitField.jsx 로 이관.
+   여기서는 셸 안 행 배치(프리픽스·구분자 + 입력칸)만 둔다. */
 
-export const SplitFieldLabel = styled.span`
-  font-size: ${theme.fontSize.sm};
-  font-weight: ${theme.fontWeight.semibold};
-  color: ${theme.color.text};
-
-  ${({ $required }) =>
-    $required &&
-    `&::after { content: " *"; color: ${theme.color.danger}; }`}
-`;
-
-export const SplitFieldError = styled.span`
-  font-size: ${theme.fontSize.xs};
-  color: ${theme.color.danger600};
-`;
-
-/* [010] [입력칸] — 라벨은 SplitFieldLabel 이 위에서 담당하므로 가운데 정렬만. */
+/* [010] [입력칸] — 라벨은 SplitField 가 위에서 담당하므로 가운데 정렬만. */
 export const PhoneFieldRow = styled.div`
   display: grid;
   grid-template-columns: auto 1fr;
@@ -102,19 +82,4 @@ export const DomainChip = styled.button`
   ${({ $active }) =>
     $active &&
     `border-color: ${theme.color.primary}; color: ${theme.color.primary700}; font-weight: ${theme.fontWeight.semibold};`}
-`;
-
-export const HelperBox = styled.div`
-  padding: ${theme.space.lg};
-  background-color: ${theme.color.bgSoft};
-  border-radius: ${theme.radius.md};
-  font-size: ${theme.fontSize.xs};
-  color: ${theme.color.sub};
-  line-height: ${theme.lineHeight.loose};
-`;
-
-export const HelperBoxTitle = styled.p`
-  font-weight: ${theme.fontWeight.semibold};
-  color: ${theme.color.text};
-  margin-bottom: ${theme.space.xs};
 `;

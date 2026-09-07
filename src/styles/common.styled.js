@@ -188,11 +188,11 @@ export const StyledInput = styled.input`
     color: ${theme.color.placeholder};
   }
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not([readonly]) {
     border-color: ${theme.color.gray400};
   }
 
-  &:focus {
+  &:focus:not([readonly]) {
     outline: none;
     border-color: ${({ $hasError }) => ($hasError ? theme.color.borderDanger : theme.color.borderFocus)};
     box-shadow: 0 0 0 3px ${({ $hasError }) => ($hasError ? theme.color.danger50 : theme.color.primary50)};
@@ -202,6 +202,30 @@ export const StyledInput = styled.input`
     background-color: ${theme.color.bgSoft};
     color: ${theme.color.sub};
     cursor: not-allowed;
+  }
+
+  /* 현재값 표시 전용(readOnly). 값은 선택·복사되지만 편집 불가로 보이게. */
+  &[readonly] {
+    background-color: ${theme.color.bgSoft};
+    color: ${theme.color.sub};
+    cursor: default;
+  }
+`;
+
+/* 비밀번호 표시/숨김 토글 — Input 의 suffix 로 넣는다. components/common/PasswordToggle.jsx */
+export const PasswordToggleButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 32px;
+  font-size: ${theme.fontSize.md};
+  line-height: 1;
+  color: ${theme.color.sub};
+  transition: opacity ${theme.transition.fast};
+
+  &:hover {
+    opacity: 0.7;
   }
 `;
 
@@ -673,4 +697,37 @@ export const ToastIcon = styled.span`
   font-weight: ${theme.fontWeight.bold};
   color: ${theme.color.white};
   background-color: ${({ $variant }) => VARIANT_ICON_BG[$variant] || VARIANT_ICON_BG.info};
+`;
+
+/* ============================================================
+   SplitField — 라벨 + (프리픽스가 있는) 입력 행 + 에러를 묶는 셸
+   에러를 입력 행 "밖"에 둬서 에러가 떠도 행 안쪽 칸(010 / @) 정렬이 안 흔들린다.
+   행 그리드 배치는 화면마다 달라서 쓰는 쪽에서 children 으로 넘긴다.
+   JSX·aria 배선은 components/common/SplitField.jsx.
+   ============================================================ */
+
+export const SplitFieldWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.space.sm};
+`;
+
+export const SplitFieldLabel = styled.label`
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.semibold};
+  color: ${theme.color.text};
+
+  ${({ $required }) =>
+    $required &&
+    css`
+      &::after {
+        content: ' *';
+        color: ${theme.color.danger};
+      }
+    `}
+`;
+
+export const SplitFieldError = styled.span`
+  font-size: ${theme.fontSize.xs};
+  color: ${theme.color.danger600};
 `;

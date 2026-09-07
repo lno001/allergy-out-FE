@@ -1,21 +1,26 @@
-import { useContext, useState } from "react";
+import { useContext, useId, useState } from "react";
 
 import { updateMemberEmail } from "../../../apis/memberApi";
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
+import SplitField from "../../../components/common/SplitField";
 import { ToastContext } from "../../../components/common/ToastProvider";
+import useSanitizedChange from "../../../hooks/useSanitizedChange";
 import useSubmitAction from "../../../hooks/useSubmitAction";
 import { splitFormError } from "../../../utils/apiError";
+import {
+  EMAIL_MAX,
+  buildEmail,
+  sanitizeEmailDomain,
+  sanitizeEmailLocal,
+} from "../../../utils/memberValidation";
 import {
   DomainChip,
   DomainChips,
   EmailFieldRow,
   FieldAdornment,
   FormStack,
-  SplitField,
-  SplitFieldError,
-  SplitFieldLabel,
 } from "./ModalForm.styled";
 
 /** "빠른 입력" 칩 후보. 눌러 도메인 칸을 채우거나, 그냥 직접 쳐도 된다. */
@@ -29,9 +34,6 @@ const DOMAIN_SUGGESTIONS = [
   "outlook.com",
 ];
 
-/** 제출 허용용 느슨한 도메인 체크 — 실제 유효성은 서버(@Email)가 판정한다. */
-const looksLikeDomain = (domain) => /.+\..+/.test(domain.trim());
-
 /**
  * @typedef {Object} EditEmailModalProps
  * @property {boolean} isOpen
@@ -44,10 +46,9 @@ const looksLikeDomain = (domain) => /.+\..+/.test(domain.trim());
  * 이메일 변경 모달 — PATCH /api/members/email
  *
  * 회원가입과 동일하게 아이디 / @ / 도메인 세 칸으로 나눈다. 도메인은 직접 입력하거나
- * 아래 "빠른 입력" 칩으로 흔한 도메인을 채운다(칩은 팝업이 아니라 폼 흐름 안의 버튼).
- * 라벨·에러는 행 밖(SplitField)에 두어, 에러가 떠도 세 칸 정렬이 흔들리지 않게 한다.
- * 형식 검증은 서버가 하므로(@Email → 400 {email: msg}) 입력값을 그대로 이어 붙여 보낸다.
- * 입력칸 Enter → 변경하기(form submit).
+ * 아래 "빠른 입력" 칩으로 흔한 도메인을 채운다. 라벨·에러는 행 밖(SplitField)에 두어,
+ * 에러가 떠도 세 칸 정렬이 흔들리지 않게 한다.
+ * 로컬/도메인 칸은 BE 허용문자만 입력되게 실시간 차단(한글·공백 등 제거). 형식·50자 최종 판정은 서버.
  *
  * Figma 원안의 "인증 요청 → 인증번호" 2단계는 이메일 인증 API 미구현이라 생략(바로 PATCH).
  * 인증 API가 생기면 아래 주석 블록을 되살릴 것.
@@ -57,16 +58,26 @@ const looksLikeDomain = (domain) => /.+\..+/.test(domain.trim());
 function EditEmailModal({ isOpen, onClose, currentEmail, onSuccess }) {
   const showToast = useContext(ToastContext);
   const { submitting, run } = useSubmitAction();
+  const emailLocalId = useId();
   const [local, setLocal] = useState("");
   const [domain, setDomain] = useState("");
   const [error, setError] = useState("");
 
-  const nextEmail = `${local.trim()}@${domain.trim()}`;
-  const canSubmit = Boolean(local.trim()) && looksLikeDomain(domain);
+  // 게이트는 "두 칸 다 채움"만. 형식·50자 위반은 제출 → 서버 400 이 알려준다.
+  const canSubmit = Boolean(local) && Boolean(domain);
 
   const clearError = () => {
     if (error) setError("");
   };
+
+  const localChange = useSanitizedChange(sanitizeEmailLocal, (v) => {
+    setLocal(v);
+    clearError();
+  });
+  const domainChange = useSanitizedChange(sanitizeEmailDomain, (v) => {
+    setDomain(v);
+    clearError();
+  });
 
   const handleClose = () => {
     setLocal("");
@@ -80,7 +91,7 @@ function EditEmailModal({ isOpen, onClose, currentEmail, onSuccess }) {
     setError("");
     run(
       async () => {
-        const res = await updateMemberEmail(nextEmail);
+        const res = await updateMemberEmail(buildEmail(local, domain));
         onSuccess(res.data.email);
         showToast?.(res.msg, "success");
         handleClose();
@@ -118,49 +129,59 @@ function EditEmailModal({ isOpen, onClose, currentEmail, onSuccess }) {
         }}
       >
         <FormStack>
-          <Input label="현재 이메일" value={currentEmail} disabled readOnly />
+          <Input label="현재 이메일" value={currentEmail} readOnly />
 
-          <SplitField>
-            <SplitFieldLabel $required>새로운 이메일</SplitFieldLabel>
-            <EmailFieldRow>
-              <Input
-                aria-label="이메일 아이디"
-                autoComplete="off"
-                placeholder="이메일 아이디"
-                value={local}
-                onChange={(e) => {
-                  setLocal(e.target.value);
-                  clearError();
-                }}
-              />
-              <FieldAdornment>@</FieldAdornment>
-              <Input
-                aria-label="이메일 도메인"
-                autoComplete="off"
-                placeholder="naver.com"
-                value={domain}
-                onChange={(e) => {
-                  setDomain(e.target.value);
-                  clearError();
-                }}
-              />
-            </EmailFieldRow>
-            <DomainChips>
-              {DOMAIN_SUGGESTIONS.map((d) => (
-                <DomainChip
-                  key={d}
-                  type="button"
-                  $active={domain.trim().toLowerCase() === d}
-                  onClick={() => {
-                    setDomain(d);
-                    clearError();
-                  }}
-                >
-                  {d}
-                </DomainChip>
-              ))}
-            </DomainChips>
-            {error && <SplitFieldError>{error}</SplitFieldError>}
+          <SplitField
+            label="새로운 이메일"
+            htmlFor={emailLocalId}
+            required
+            error={error}
+          >
+            {({ describedBy, invalid, required }) => (
+              <>
+                <EmailFieldRow>
+                  <Input
+                    id={emailLocalId}
+                    aria-label="이메일 아이디"
+                    autoComplete="off"
+                    placeholder="이메일 아이디"
+                    maxLength={EMAIL_MAX}
+                    value={local}
+                    {...localChange}
+                    aria-required={required}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                  />
+                  <FieldAdornment>@</FieldAdornment>
+                  <Input
+                    aria-label="이메일 도메인"
+                    autoComplete="off"
+                    placeholder="naver.com"
+                    maxLength={EMAIL_MAX}
+                    value={domain}
+                    {...domainChange}
+                    aria-required={required}
+                    aria-describedby={describedBy}
+                    aria-invalid={invalid}
+                  />
+                </EmailFieldRow>
+                <DomainChips>
+                  {DOMAIN_SUGGESTIONS.map((d) => (
+                    <DomainChip
+                      key={d}
+                      type="button"
+                      $active={domain.toLowerCase() === d}
+                      onClick={() => {
+                        setDomain(sanitizeEmailDomain(d));
+                        clearError();
+                      }}
+                    >
+                      {d}
+                    </DomainChip>
+                  ))}
+                </DomainChips>
+              </>
+            )}
           </SplitField>
         </FormStack>
 

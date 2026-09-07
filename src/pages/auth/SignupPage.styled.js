@@ -33,15 +33,34 @@ export const SignupFields = styled.div`
   }
 `;
 
+/* 라벨·에러 셸은 공용 컴포넌트 components/common/SplitField.jsx 로 이관.
+   여기서는 셸 안에 들어가는 "행 배치"(010 / @ 위치)만 둔다. */
+
+/* [010] [뒤 8자리] */
+export const PhoneRow = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: ${theme.space.md};
+`;
+
+/* 라벨 없는 프리픽스(010) / 구분자(@) */
+export const FieldPrefix = styled.span`
+  font-size: ${theme.fontSize.lg};
+  font-weight: ${theme.fontWeight.medium};
+  color: ${theme.color.text};
+  white-space: nowrap;
+`;
+
+/* [아이디] @ [도메인] — 라벨·에러는 SplitField 가 담당하므로 가운데 정렬만. */
 export const EmailRow = styled.div`
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: end;
+  align-items: center;
   gap: ${theme.space.md};
 `;
 
 export const EmailAt = styled.span`
-  padding-bottom: 1.4rem;
   font-size: ${theme.fontSize.lg};
   font-weight: ${theme.fontWeight.medium};
   color: ${theme.color.text};

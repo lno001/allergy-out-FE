@@ -7,6 +7,7 @@ import Modal from "../../../components/common/Modal";
 import { ToastContext } from "../../../components/common/ToastProvider";
 import useSubmitAction from "../../../hooks/useSubmitAction";
 import { splitFormError } from "../../../utils/apiError";
+import { MEMBER_HINT, MEMBER_MAX } from "../../../utils/memberValidation";
 import { FormStack } from "./ModalForm.styled";
 
 /**
@@ -19,6 +20,8 @@ import { FormStack } from "./ModalForm.styled";
 
 /**
  * 이름 변경 모달 — PATCH /api/members/membername (2~30자)
+ * 앱단은 maxLength 만 걸고, 길이 미달 등 형식 위반 문구는 서버 응답을 그대로 쓴다.
+ * 전송 전 앞뒤 공백은 제거한다(회원가입과 동일).
  * @param {EditNameModalProps} props
  */
 function EditNameModal({ isOpen, onClose, currentName, onSuccess }) {
@@ -34,11 +37,12 @@ function EditNameModal({ isOpen, onClose, currentName, onSuccess }) {
   };
 
   const handleSubmit = () => {
-    if (!name.trim() || submitting) return; // Enter 등 조건 안 맞을 때 방지
+    const trimmed = name.trim();
+    if (!trimmed || submitting) return; // Enter 등 조건 안 맞을 때 방지
     setError("");
     run(
       async () => {
-        const res = await updateMemberName(name);
+        const res = await updateMemberName(trimmed);
         onSuccess(res.data.memberName);
         showToast?.(res.msg, "success");
         handleClose();
@@ -76,11 +80,12 @@ function EditNameModal({ isOpen, onClose, currentName, onSuccess }) {
         }}
       >
         <FormStack>
-          <Input label="현재 이름" value={currentName} disabled readOnly />
+          <Input label="현재 이름" value={currentName} readOnly />
           <Input
             label="새로운 이름"
             required
-            placeholder="변경할 이름을 입력해주세요"
+            placeholder={MEMBER_HINT.memberName}
+            maxLength={MEMBER_MAX.memberName}
             value={name}
             onChange={(e) => setName(e.target.value)}
             error={error}

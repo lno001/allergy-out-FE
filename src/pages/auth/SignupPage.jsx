@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { signup } from "../../apis/authApi";
@@ -7,11 +7,26 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import Modal from "../../components/common/Modal";
+import PasswordToggle from "../../components/common/PasswordToggle";
+import SplitField from "../../components/common/SplitField";
 import { useAuth } from "../../hooks/useAuth";
-import { PasswordToggle } from "./LoginPage.styled";
+import useSanitizedChange from "../../hooks/useSanitizedChange";
+import {
+  EMAIL_MAX,
+  MEMBER_HINT,
+  MEMBER_MAX,
+  PASSWORD_CONFIRM_MISMATCH,
+  buildEmail,
+  sanitizeEmailDomain,
+  sanitizeEmailLocal,
+  sanitizeMemberId,
+  toPhoneLocal,
+} from "../../utils/memberValidation";
 import {
   EmailAt,
   EmailRow,
+  FieldPrefix,
+  PhoneRow,
   SignupActions,
   SignupFields,
   SignupForm,
@@ -24,7 +39,7 @@ const INITIAL_FORM = {
   memberPwd: "",
   memberPwdCheck: "",
   memberName: "",
-  phone: "",
+  phone: "", // "010"을 뺀 뒤 8자리
   emailId: "",
   emailDomain: "",
 };
@@ -38,6 +53,10 @@ const INITIAL_FIELD_ERRORS = {
   email: "",
 };
 
+/**
+ * 서버 검증 실패 응답의 data({ 필드: msg })를 폼 필드 에러로 옮긴다.
+ * 길이·형식 위반 문구는 FE 가 만들지 않으므로, 이 맵이 필드 에러의 유일한 출처다.
+ */
 function getFieldErrors(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return null;
@@ -67,16 +86,48 @@ function SignupPage() {
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  const phoneFieldId = useId();
+  const emailLocalId = useId();
 
+  // 제출 게이트: 필수값이 채워졌는지만 본다. 길이·형식 위반은 제출 → 서버 400 이 알려준다.
+  // memberName 만 정제가 없어 공백뿐인 입력을 .trim() 으로 걸러낸다.
+  const canSubmit =
+    Boolean(form.memberId) &&
+    Boolean(form.memberPwd) &&
+    Boolean(form.memberPwdCheck) &&
+    Boolean(form.memberName.trim()) &&
+    form.phone.length === MEMBER_MAX.phoneLocal &&
+    Boolean(form.emailId) &&
+    Boolean(form.emailDomain);
+
+  // 필드 하나를 갱신하고, 그 필드에 떠 있던 에러를 지운다.
+  const updateField = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
     const fieldKey =
       name === "emailId" || name === "emailDomain" ? "email" : name;
-    if (fieldErrors[fieldKey]) {
-      setFieldErrors((prev) => ({ ...prev, [fieldKey]: "" }));
-    }
+    setFieldErrors((prev) =>
+      prev[fieldKey] ? { ...prev, [fieldKey]: "" } : prev,
+    );
   };
+
+  // 정제 없는 필드(비번·비번확인·이름) — 길이·형식 위반은 제출 → 서버 400 이 알려준다.
+  // 이름은 한글이 유효하므로 여기서 손대지 않는다.
+  const handleChange = (event) =>
+    updateField(event.target.name, event.target.value);
+
+  // 정제 있는 필드 — IME 조합 중엔 원문을 두고 조합이 끝났을 때만 정제한다.
+  const memberIdChange = useSanitizedChange(sanitizeMemberId, (v) =>
+    updateField("memberId", v),
+  );
+  const emailIdChange = useSanitizedChange(sanitizeEmailLocal, (v) =>
+    updateField("emailId", v),
+  );
+  const emailDomainChange = useSanitizedChange(sanitizeEmailDomain, (v) =>
+    updateField("emailDomain", v),
+  );
+  const phoneChange = useSanitizedChange(toPhoneLocal, (v) =>
+    updateField("phone", v),
+  );
 
   const handleTogglePassword = () => {
     setIsPasswordVisible((prev) => !prev);
@@ -84,75 +135,16 @@ function SignupPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!canSubmit || isSubmitting) return;
+
     setErrorMsg("");
     setFieldErrors(INITIAL_FIELD_ERRORS);
 
-    const memberId = form.memberId.trim();
-    const memberName = form.memberName.trim();
-    const phone = form.phone.replace(/[^0-9]/g, "");
-    const emailDomain = form.emailDomain.trim();
-    const email = `${form.emailId.trim()}@${emailDomain}`;
-    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/;
-    const phonePattern = /^010[0-9]{8}$/;
-
-    if (
-      !memberId ||
-      !form.memberPwd ||
-      !form.memberPwdCheck ||
-      !memberName ||
-      !phone ||
-      !form.emailId.trim() ||
-      !emailDomain
-    ) {
-      setErrorMsg("필수 항목을 모두 입력해 주세요.");
-      return;
-    }
-
-    if (memberId.length < 4 || memberId.length > 20) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        memberId: "아이디는 4자 이상 20자 이하로 입력해 주세요.",
-      }));
-      return;
-    }
-
-    if (!passwordPattern.test(form.memberPwd)) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        memberPwd:
-          "비밀번호는 영문, 숫자를 포함하여 8자 이상 20자 이하로 입력해주세요.",
-      }));
-      return;
-    }
-
+    // 서버가 확인 필드를 받지 않으므로 이 검사만 FE 가 한다. 나머지 형식·길이는 서버 400.
     if (form.memberPwd !== form.memberPwdCheck) {
       setFieldErrors((prev) => ({
         ...prev,
-        memberPwdCheck: "비밀번호가 일치하지 않습니다.",
-      }));
-      return;
-    }
-
-    if (memberName.length < 2 || memberName.length > 30) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        memberName: "이름은 2자 이상 30자 이하로 입력해주세요.",
-      }));
-      return;
-    }
-
-    if (!phonePattern.test(phone)) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        phone: "올바른 연락처 형식이 아닙니다.",
-      }));
-      return;
-    }
-
-    if (!emailDomain.includes(".") || email.length > 50) {
-      setFieldErrors((prev) => ({
-        ...prev,
-        email: "올바른 이메일 형식이 아닙니다.",
+        memberPwdCheck: PASSWORD_CONFIRM_MISMATCH,
       }));
       return;
     }
@@ -160,11 +152,11 @@ function SignupPage() {
     setIsSubmitting(true);
     try {
       await signup({
-        memberId,
+        memberId: form.memberId,
         memberPwd: form.memberPwd,
-        memberName,
-        phone,
-        email,
+        memberName: form.memberName.trim(),
+        phone: `010${form.phone}`,
+        email: buildEmail(form.emailId, form.emailDomain),
       });
       setIsSuccessOpen(true);
     } catch (err) {
@@ -210,88 +202,130 @@ function SignupPage() {
         <SignupFields>
           <Input
             label="아이디"
+            required
             name="memberId"
             value={form.memberId}
-            onChange={handleChange}
-            placeholder="아이디는 (4~20글자)"
-            maxLength={20}
+            {...memberIdChange}
+            placeholder={MEMBER_HINT.memberId}
+            maxLength={MEMBER_MAX.memberId}
             autoComplete="username"
             error={fieldErrors.memberId}
           />
           <Input
             label="비밀번호"
+            required
             name="memberPwd"
             type={isPasswordVisible ? "text" : "password"}
             value={form.memberPwd}
             onChange={handleChange}
-            placeholder="영문, 숫자 포함 8~20자"
+            placeholder={MEMBER_HINT.memberPwd}
+            maxLength={MEMBER_MAX.memberPwd}
             autoComplete="new-password"
             error={fieldErrors.memberPwd}
             suffix={
               <PasswordToggle
-                type="button"
-                onClick={handleTogglePassword}
-                aria-label={
-                  isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"
-                }
-              >
-                {isPasswordVisible ? "on" : "off"}
-              </PasswordToggle>
+                visible={isPasswordVisible}
+                onToggle={handleTogglePassword}
+              />
             }
           />
           <Input
             label="비밀번호 확인"
+            required
             name="memberPwdCheck"
             type={isPasswordVisible ? "text" : "password"}
             value={form.memberPwdCheck}
             onChange={handleChange}
             placeholder="비밀번호 재입력"
+            maxLength={MEMBER_MAX.memberPwd}
             autoComplete="new-password"
             error={fieldErrors.memberPwdCheck}
           />
-          <Input
+
+          <SplitField
             label="전화번호"
-            name="phone"
-            value={form.phone}
-            onChange={handleChange}
-            placeholder="010-0000-0000"
-            autoComplete="tel"
+            required
+            htmlFor={phoneFieldId}
             error={fieldErrors.phone}
-          />
+          >
+            {({ describedBy, invalid, required }) => (
+              <PhoneRow>
+                <FieldPrefix>010</FieldPrefix>
+                <Input
+                  id={phoneFieldId}
+                  name="phone"
+                  inputMode="numeric"
+                  value={form.phone}
+                  {...phoneChange}
+                  placeholder={MEMBER_HINT.phone}
+                  maxLength={MEMBER_MAX.phoneLocal}
+                  autoComplete="tel-national"
+                  aria-required={required}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                />
+              </PhoneRow>
+            )}
+          </SplitField>
+
           <Input
             label="이름"
+            required
             name="memberName"
             value={form.memberName}
             onChange={handleChange}
-            placeholder="이름은 2~30자"
-            maxLength={30}
+            placeholder={MEMBER_HINT.memberName}
+            maxLength={MEMBER_MAX.memberName}
             autoComplete="name"
             error={fieldErrors.memberName}
           />
-          <EmailRow>
-            <Input
-              label="이메일"
-              name="emailId"
-              value={form.emailId}
-              onChange={handleChange}
-              placeholder="이메일 주소"
-              autoComplete="off"
-              error={fieldErrors.email}
-            />
-            <EmailAt>@</EmailAt>
-            <Input
-              label={"\u00a0"}
-              name="emailDomain"
-              value={form.emailDomain}
-              onChange={handleChange}
-              placeholder="naver.com"
-              autoComplete="off"
-            />
-          </EmailRow>
+
+          <SplitField
+            label="이메일"
+            required
+            htmlFor={emailLocalId}
+            error={fieldErrors.email}
+          >
+            {({ describedBy, invalid, required }) => (
+              <EmailRow>
+                <Input
+                  id={emailLocalId}
+                  name="emailId"
+                  value={form.emailId}
+                  {...emailIdChange}
+                  placeholder="이메일 아이디"
+                  maxLength={EMAIL_MAX}
+                  autoComplete="off"
+                  aria-required={required}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                />
+                <EmailAt>@</EmailAt>
+                <Input
+                  aria-label="이메일 도메인"
+                  name="emailDomain"
+                  value={form.emailDomain}
+                  {...emailDomainChange}
+                  placeholder="naver.com"
+                  maxLength={EMAIL_MAX}
+                  autoComplete="off"
+                  aria-required={required}
+                  aria-describedby={describedBy}
+                  aria-invalid={invalid}
+                />
+              </EmailRow>
+            )}
+          </SplitField>
         </SignupFields>
 
         <SignupActions>
-          <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
+          <Button
+            type="submit"
+            size="lg"
+            fullWidth
+            loading={isSubmitting}
+            disabled={!canSubmit}
+          >
             가입하기
           </Button>
           <Button

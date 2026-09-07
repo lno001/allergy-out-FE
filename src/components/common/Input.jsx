@@ -40,11 +40,11 @@ import {
  *   error={emailError}
  * />
  *
- * // 비밀번호 표시 토글
+ * // 비밀번호 표시 토글 (공용 PasswordToggle 사용)
  * <Input
  *   label="비밀번호"
  *   type={show ? 'text' : 'password'}
- *   suffix={<button type="button" onClick={() => setShow(!show)}>👁</button>}
+ *   suffix={<PasswordToggle visible={show} onToggle={() => setShow((v) => !v)} />}
  * />
  */
 function Input({
