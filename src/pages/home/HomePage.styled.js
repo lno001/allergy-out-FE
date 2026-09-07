@@ -46,50 +46,69 @@ export const Paragraph = styled.p`
   font-weight: ${theme.fontWeight.semibold};
 `;
 
-/* 사진 3장이 뜨는 우측 패널. 사진은 절대좌표로 삼각형(위 1장 + 아래 2장) 구도로 배치. */
+/* 가운데 사진 하나는 크게, 좌/우 사진은 옆으로 살짝 비쳐 보이는(peek) 우측 패널.
+   화살표는 잘리는 뷰포트 바깥 좌/우에 둬서 사진을 가리지 않는다. */
 export const PhotoPanel = styled.div`
   position: relative;
   background-color: ${theme.color.bgPage};
-  min-height: 40rem;
+  min-height: 44rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${theme.space.lg};
+  padding: 0 ${theme.space.lg};
 `;
 
-const photoCardBase = css`
+/* 가운데 사진 + 양옆 살짝 비치는 사진만 남기고 나머지는 잘라내는 창 */
+export const PhotoViewport = styled.div`
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  width: 34rem;
+  height: 34rem;
+`;
+
+/* 사진들을 한 줄로 늘어놓고 $offset만큼 옆으로 밀어서 원하는 사진이 가운데 오게 한다 */
+export const PhotoTrack = styled.div`
   position: absolute;
-  width: 42%;
-  aspect-ratio: 1 / 1;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: ${theme.space.lg};
+  height: 100%;
+  transform: translateX(${({ $offsetRem }) => $offsetRem}rem);
+  transition: transform 0.5s ease;
+`;
+
+export const PhotoTile = styled.div`
+  position: relative;
+  flex: 0 0 ${({ $size }) => $size}rem;
+  height: 100%;
   border-radius: ${theme.radius.md};
   overflow: hidden;
-  box-shadow: ${theme.shadow.md};
-  border: 4px solid ${theme.color.white};
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
+  box-shadow: ${({ $active }) => ($active ? theme.shadow.lg : "none")};
+  border: ${({ $active }) => ($active ? `4px solid ${theme.color.white}` : "none")};
+  opacity: ${({ $active }) => ($active ? 1 : 0.4)};
+  transition: opacity 0.5s ease;
 `;
 
-export const PhotoTop = styled.div`
-  ${photoCardBase}
-  top: ${theme.space["2xl"]};
-  left: 50%;
-  transform: translateX(-50%);
+/* 실제 등록된 레시피 사진(가운데 활성 칸)을 눌렀을 때 상세 페이지로 보내는 링크 —
+   칸 전체를 덮어서 사진 어디를 눌러도 이동한다. */
+export const PhotoLink = styled(Link)`
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
 `;
 
-export const PhotoBottomLeft = styled.div`
-  ${photoCardBase}
-  bottom: ${theme.space["2xl"]};
-  left: 6%;
+export const RotatingImg = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 `;
 
-export const PhotoBottomRight = styled.div`
-  ${photoCardBase}
-  bottom: ${theme.space["2xl"]};
-  right: 6%;
-`;
-
-/* 브랜드 그린 톤 그라데이션 — 사진 3장이 한 세트처럼 보이도록 통일감을 준다. */
+/* 브랜드 그린 톤 그라데이션 — 사진이 바뀌어도 톤이 항상 통일되게. */
 export const PhotoOverlay = styled.div`
   position: absolute;
   inset: 0;
@@ -98,6 +117,26 @@ export const PhotoOverlay = styled.div`
     rgba(31, 138, 82, 0) 45%,
     rgba(15, 79, 48, 0.55) 100%
   );
+`;
+
+/* 좌/우 화살표 — 그리드 바깥에 나란히 두는 일반 플렉스 아이템이라 사진을 가리지 않는다. */
+export const PhotoArrowBtn = styled.button`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.6rem;
+  height: 3.6rem;
+  color: ${theme.color.text};
+  background: ${theme.color.white};
+  border-radius: ${theme.radius.full};
+  box-shadow: ${theme.shadow.md};
+  transition: transform ${theme.transition.fast}, background ${theme.transition.fast};
+
+  &:hover {
+    background: ${theme.color.bgSoft};
+    transform: scale(1.06);
+  }
 `;
 
 /* 히어로 아래, 3개의 바로가기 버튼(알약 모양 아웃라인) 줄 */
