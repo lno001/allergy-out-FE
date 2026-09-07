@@ -25,7 +25,7 @@ export const MEMBER_MAX = {
 /** 이메일 각 칸(로컬/도메인) maxLength. 합산 50자 초과는 서버 400 이 알려준다. */
 export const EMAIL_MAX = 50;
 
-/** placeholder / help 박스용 짧은 안내 (에러 메시지 아님, FE UI 카피). */
+/** 입력칸 placeholder 로 넣는 짧은 규칙 안내 (에러 메시지 아님, FE UI 카피). */
 export const MEMBER_HINT = {
   memberId: "영문 소문자·숫자 4~20자",
   memberPwd: "영문·숫자 포함 8~30자 (특수문자 가능, 공백 불가)",

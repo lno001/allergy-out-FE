@@ -129,7 +129,7 @@ function EditEmailModal({ isOpen, onClose, currentEmail, onSuccess }) {
         }}
       >
         <FormStack>
-          <Input label="현재 이메일" value={currentEmail} disabled readOnly />
+          <Input label="현재 이메일" value={currentEmail} readOnly />
 
           <SplitField
             label="새로운 이메일"

@@ -188,11 +188,11 @@ export const StyledInput = styled.input`
     color: ${theme.color.placeholder};
   }
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not([readonly]) {
     border-color: ${theme.color.gray400};
   }
 
-  &:focus {
+  &:focus:not([readonly]) {
     outline: none;
     border-color: ${({ $hasError }) => ($hasError ? theme.color.borderDanger : theme.color.borderFocus)};
     box-shadow: 0 0 0 3px ${({ $hasError }) => ($hasError ? theme.color.danger50 : theme.color.primary50)};
@@ -202,6 +202,30 @@ export const StyledInput = styled.input`
     background-color: ${theme.color.bgSoft};
     color: ${theme.color.sub};
     cursor: not-allowed;
+  }
+
+  /* 현재값 표시 전용(readOnly). 값은 선택·복사되지만 편집 불가로 보이게. */
+  &[readonly] {
+    background-color: ${theme.color.bgSoft};
+    color: ${theme.color.sub};
+    cursor: default;
+  }
+`;
+
+/* 비밀번호 표시/숨김 토글 — Input 의 suffix 로 넣는다. components/common/PasswordToggle.jsx */
+export const PasswordToggleButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 32px;
+  font-size: ${theme.fontSize.md};
+  line-height: 1;
+  color: ${theme.color.sub};
+  transition: opacity ${theme.transition.fast};
+
+  &:hover {
+    opacity: 0.7;
   }
 `;
 

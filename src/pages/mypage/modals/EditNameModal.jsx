@@ -80,7 +80,7 @@ function EditNameModal({ isOpen, onClose, currentName, onSuccess }) {
         }}
       >
         <FormStack>
-          <Input label="현재 이름" value={currentName} disabled readOnly />
+          <Input label="현재 이름" value={currentName} readOnly />
           <Input
             label="새로운 이름"
             required

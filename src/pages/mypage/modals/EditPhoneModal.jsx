@@ -97,7 +97,7 @@ function EditPhoneModal({ isOpen, onClose, currentPhone, onSuccess }) {
         }}
       >
         <FormStack>
-          <Input label="현재 연락처" value={currentPhone} disabled readOnly />
+          <Input label="현재 연락처" value={currentPhone} readOnly />
           <SplitField
             label="새로운 연락처"
             htmlFor={phoneId}

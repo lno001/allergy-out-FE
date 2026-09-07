@@ -83,18 +83,3 @@ export const DomainChip = styled.button`
     $active &&
     `border-color: ${theme.color.primary}; color: ${theme.color.primary700}; font-weight: ${theme.fontWeight.semibold};`}
 `;
-
-export const HelperBox = styled.div`
-  padding: ${theme.space.lg};
-  background-color: ${theme.color.bgSoft};
-  border-radius: ${theme.radius.md};
-  font-size: ${theme.fontSize.xs};
-  color: ${theme.color.sub};
-  line-height: ${theme.lineHeight.loose};
-`;
-
-export const HelperBoxTitle = styled.p`
-  font-weight: ${theme.fontWeight.semibold};
-  color: ${theme.color.text};
-  margin-bottom: ${theme.space.xs};
-`;

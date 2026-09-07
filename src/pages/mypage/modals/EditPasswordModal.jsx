@@ -4,6 +4,7 @@ import { updateMemberPassword } from "../../../apis/memberApi";
 import Button from "../../../components/common/Button";
 import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
+import PasswordToggle from "../../../components/common/PasswordToggle";
 import { ToastContext } from "../../../components/common/ToastProvider";
 import useSubmitAction from "../../../hooks/useSubmitAction";
 import { splitFormError } from "../../../utils/apiError";
@@ -12,7 +13,7 @@ import {
   MEMBER_MAX,
   PASSWORD_CONFIRM_MISMATCH,
 } from "../../../utils/memberValidation";
-import { FormStack, HelperBox, HelperBoxTitle } from "./ModalForm.styled";
+import { FormStack } from "./ModalForm.styled";
 
 /**
  * @typedef {Object} EditPasswordModalProps
@@ -21,24 +22,12 @@ import { FormStack, HelperBox, HelperBoxTitle } from "./ModalForm.styled";
  * @property {() => void} onSuccess
  */
 
-function PasswordToggle({ visible, onToggle }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={visible ? "비밀번호 숨기기" : "비밀번호 표시"}
-    >
-      {visible ? "🙈" : "👁"}
-    </button>
-  );
-}
-
 /**
  * 비밀번호 변경 모달 — PATCH /api/members/memberpwd
  *
  * 앱단은 maxLength(30) + "새 비밀번호 ≠ 확인"(서버가 확인 필드를 안 받아 FE 만 판정,
  * PASSWORD_CONFIRM_MISMATCH)만 본다. 길이·형식 위반 문구는 서버 400 을 그대로 쓴다.
- * HelperBox 는 정적 안내 카피(MEMBER_HINT).
+ * "새 비밀번호" 규칙 안내는 Input 의 helperText.
  *
  * @param {EditPasswordModalProps} props
  */
@@ -122,6 +111,7 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
             maxLength={MEMBER_MAX.memberPwd}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
+            autoComplete="current-password"
             error={errors.currentPassword}
             suffix={
               <PasswordToggle
@@ -134,10 +124,11 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
             label="새 비밀번호"
             required
             type={visible.next ? "text" : "password"}
-            placeholder="새 비밀번호를 입력해주세요"
+            placeholder={MEMBER_HINT.memberPwd}
             maxLength={MEMBER_MAX.memberPwd}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
+            autoComplete="new-password"
             error={errors.newPassword}
             suffix={
               <PasswordToggle
@@ -154,6 +145,7 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
             maxLength={MEMBER_MAX.memberPwd}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
             error={errors.confirmPassword}
             suffix={
               <PasswordToggle
@@ -162,10 +154,6 @@ function EditPasswordModal({ isOpen, onClose, onSuccess }) {
               />
             }
           />
-          <HelperBox>
-            <HelperBoxTitle>💡 비밀번호 안전 규칙</HelperBoxTitle>
-            {MEMBER_HINT.memberPwd}
-          </HelperBox>
         </FormStack>
 
         {/* Enter 로 폼 제출되게 하는 숨은 submit (footer 버튼은 form 밖이라 필요) */}

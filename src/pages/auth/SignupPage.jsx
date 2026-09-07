@@ -7,6 +7,7 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import Modal from "../../components/common/Modal";
+import PasswordToggle from "../../components/common/PasswordToggle";
 import SplitField from "../../components/common/SplitField";
 import { useAuth } from "../../hooks/useAuth";
 import useSanitizedChange from "../../hooks/useSanitizedChange";
@@ -21,7 +22,6 @@ import {
   sanitizeMemberId,
   toPhoneLocal,
 } from "../../utils/memberValidation";
-import { PasswordToggle } from "./LoginPage.styled";
 import {
   EmailAt,
   EmailRow,
@@ -224,14 +224,9 @@ function SignupPage() {
             error={fieldErrors.memberPwd}
             suffix={
               <PasswordToggle
-                type="button"
-                onClick={handleTogglePassword}
-                aria-label={
-                  isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"
-                }
-              >
-                {isPasswordVisible ? "on" : "off"}
-              </PasswordToggle>
+                visible={isPasswordVisible}
+                onToggle={handleTogglePassword}
+              />
             }
           />
           <Input

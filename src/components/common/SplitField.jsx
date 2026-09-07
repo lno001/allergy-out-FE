@@ -18,8 +18,8 @@ import {
  * @property {boolean} [required] - 라벨 옆 빨간 '*'.
  * @property {string} [error] - 있으면 빨간 문구 + aria 연결. 없을 땐 '' / undefined.
  * @property {(a11y: SplitFieldA11y) => import('react').ReactNode} children
- *   - 입력 행을 렌더한다. 넘어오는 { describedBy, invalid } 를 각 <Input> 에 그대로 얹으면
- *     스크린리더가 칸 ↔ 에러를 연결한다.
+ *   - 입력 행을 렌더한다. 넘어오는 { describedBy, invalid, required } 를 각 <Input> 에 그대로 얹으면
+ *     스크린리더가 칸 ↔ 에러 ↔ 필수여부를 연결한다.
  */
 
 /**
@@ -33,11 +33,12 @@ import {
  *
  * @example
  * const phoneId = useId();
- * <SplitField label="전화번호" htmlFor={phoneId} error={fieldErrors.phone}>
- *   {({ describedBy, invalid }) => (
+ * <SplitField label="전화번호" htmlFor={phoneId} required error={fieldErrors.phone}>
+ *   {({ describedBy, invalid, required }) => (
  *     <PhoneRow>
  *       <FieldPrefix>010</FieldPrefix>
- *       <Input id={phoneId} aria-describedby={describedBy} aria-invalid={invalid} ... />
+ *       <Input id={phoneId} placeholder="뒤 8자리 숫자"
+ *         aria-required={required} aria-describedby={describedBy} aria-invalid={invalid} ... />
  *     </PhoneRow>
  *   )}
  * </SplitField>

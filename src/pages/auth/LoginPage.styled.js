@@ -43,24 +43,6 @@ export const LoginFields = styled.div`
   }
 `;
 
-export const PasswordToggle = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  color: ${theme.color.sub};
-
-  &:hover {
-    color: ${theme.color.primaryHover};
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-`;
-
 export const SignupLinkWrap = styled.p`
   margin-top: ${theme.space.sm};
   text-align: center;
