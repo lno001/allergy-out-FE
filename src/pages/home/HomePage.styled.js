@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import styled, { css } from "styled-components";
 
 import { theme } from "../../styles/theme";
@@ -97,4 +98,56 @@ export const PhotoOverlay = styled.div`
     rgba(31, 138, 82, 0) 45%,
     rgba(15, 79, 48, 0.55) 100%
   );
+`;
+
+/* 히어로 아래, 3개의 바로가기 버튼(알약 모양 아웃라인) 줄 */
+export const ShortcutRow = styled.div`
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: ${theme.space["2xl"]};
+  padding: ${theme.space["5xl"]} ${theme.space["3xl"]} ${theme.space["4xl"]};
+`;
+
+/* 색은 공용 Button의 primary("레시피 등록하기"와 동일)를 그대로 맞춘다. */
+const shortcutBase = css`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${theme.space.sm};
+  height: 7.2rem;
+  padding: 0 ${theme.space["3xl"]};
+  border-radius: ${theme.radius.full};
+  border: none;
+  background-color: ${theme.color.primary};
+  color: ${theme.color.textOnPrimary};
+  box-shadow: ${theme.shadow.primary};
+  font-size: 2.08rem;
+  font-weight: ${theme.fontWeight.semibold};
+  white-space: nowrap;
+  transition: background-color ${theme.transition.base}, box-shadow ${theme.transition.base},
+    transform ${theme.transition.base};
+
+  svg {
+    width: 2.4rem;
+    height: 2.4rem;
+    flex-shrink: 0;
+  }
+`;
+
+export const ShortcutLink = styled(Link)`
+  ${shortcutBase}
+
+  &:hover {
+    background-color: ${theme.color.primaryHover};
+    box-shadow: ${theme.shadow.primaryHover};
+    transform: translateY(-1px);
+  }
+`;
+
+/* 아직 갈 페이지가 없는 바로가기(내 작성 레시피) — 색은 같이 맞추되 비활성임을 옅게 표시 */
+export const ShortcutButton = styled.button`
+  ${shortcutBase}
+  cursor: not-allowed;
+  opacity: 0.55;
 `;
