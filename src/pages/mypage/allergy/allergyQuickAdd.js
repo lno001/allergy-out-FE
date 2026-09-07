@@ -9,11 +9,23 @@ import { ALLERGEN_TAXONOMY } from "../../../constants/allergens";
  * 통일해서 씀 (2026-09-02) — 여기 있던 CATEGORY_BUNDLES/ALLERGEN_SUB_ITEMS는 그걸로 대체됨.
  * "육류" 묶음도 같은 이유로 하드코딩 안 하고 ALLERGEN_TAXONOMY에서 그대로 펼쳐서 씀
  * (돼지고기/닭고기/쇠고기 각각의 하위 품목 목록이 바뀌면 이 묶음도 자동으로 같이 바뀜).
+ * "5대 알러지"도 같은 이유로 우유/계란(알류)/밀/대두/땅콩 각 분류의 실제 하위 품목을
+ * 전부 펼쳐서 씀(2026-09-07) — 예전엔 "우유","계란" 같은 분류명 자체만 등록됐어서,
+ * 체크해도 그 분류의 실제 하위 품목(치즈·버터·계란 등)은 하나도 등록이 안 됐음.
  */
 
 /** 빠른 추가 — 묶음 버튼 (5대 알러지 등, 여러 재료를 한 번에) */
 export const QUICK_BUNDLES = [
-  { label: "5대 알러지", items: ["우유", "계란", "밀", "대두", "땅콩"] },
+  {
+    label: "5대 알러지",
+    items: [
+      ...ALLERGEN_TAXONOMY["우유"],
+      ...ALLERGEN_TAXONOMY["알류"],
+      ...ALLERGEN_TAXONOMY["밀"],
+      ...ALLERGEN_TAXONOMY["대두"],
+      ...ALLERGEN_TAXONOMY["땅콩"],
+    ],
+  },
   {
     label: "우유+계란",
     items: [...ALLERGEN_TAXONOMY["우유"], ...ALLERGEN_TAXONOMY["알류"]],
