@@ -177,6 +177,9 @@ export const StyledInput = styled.input`
   width: 100%;
   height: 48px;
   padding-inline: ${theme.space.lg};
+  /* suffix(눈모양 토글 등)가 있으면 그만큼 오른쪽을 비워 placeholder·값이 안 겹치게 */
+  ${({ $hasSuffix }) =>
+    $hasSuffix && `padding-inline-end: calc(${theme.space.lg} + 28px);`}
   background-color: ${theme.color.white};
   border: 1.5px solid ${({ $hasError }) => ($hasError ? theme.color.borderDanger : theme.color.border)};
   border-radius: ${theme.radius.md};

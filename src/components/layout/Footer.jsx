@@ -27,7 +27,7 @@ function Footer() {
       <FooterInner>
         <BrandColumn>
           <BrandLogo>
-            <BrandLogoIcon src="/favicon.svg" alt="" />
+            <BrandLogoIcon src="/favicon.png" alt="" />
             <BrandLogoText>알러지 아웃</BrandLogoText>
           </BrandLogo>
           <BrandDescription>
