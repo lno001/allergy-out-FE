@@ -4,7 +4,7 @@ import { getMyAllergies, updateMyAllergies } from "../apis/allergyApi";
 
 /** 회원 1명당 등록 가능한 알러지 항목 최대 개수. 백엔드(MemberService.ALLERGY_LIST_MAX_SIZE)와 동일하게 맞춤 —
  *  여기서 막는 건 UX 보조일 뿐이고, 진짜 검증은 서버가 함(save 실패 시 서버 메시지를 그대로 보여줌). */
-export const MAX_ALLERGY_COUNT = 100;
+export const MAX_ALLERGY_COUNT = 200;
 
 /**
  * 마이페이지 "알러지 필터 관리" 화면의 상태를 관리하는 훅.
