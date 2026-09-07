@@ -9,6 +9,7 @@ import Loading from "../../components/common/Loading";
 import Modal from "../../components/common/Modal";
 import SplitField from "../../components/common/SplitField";
 import { useAuth } from "../../hooks/useAuth";
+import useSanitizedChange from "../../hooks/useSanitizedChange";
 import {
   EMAIL_MAX,
   MEMBER_HINT,
@@ -49,14 +50,6 @@ const INITIAL_FIELD_ERRORS = {
   memberName: "",
   phone: "",
   email: "",
-};
-
-// onChange 시 허용문자만 통과시키는 필드(하드 차단). 나머지(비번·이름)는 maxLength만 걸고
-// 형식은 제출 시 validateSignupForm 이 본다 (비번=붙여넣기 훼손 방지 / 이름=IME 조합 보호).
-const SANITIZERS = {
-  memberId: sanitizeMemberId,
-  emailId: sanitizeEmail,
-  emailDomain: sanitizeEmail,
 };
 
 /**
@@ -109,24 +102,34 @@ function SignupPage() {
     Boolean(form.emailId.trim()) &&
     Boolean(form.emailDomain.trim());
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    const nextValue = SANITIZERS[name] ? SANITIZERS[name](value) : value;
-    setForm((prev) => ({ ...prev, [name]: nextValue }));
-
+  // 필드 하나를 갱신하고, 그 필드에 떠 있던 에러를 지운다.
+  const updateField = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
     const fieldKey =
       name === "emailId" || name === "emailDomain" ? "email" : name;
-    if (fieldErrors[fieldKey]) {
-      setFieldErrors((prev) => ({ ...prev, [fieldKey]: "" }));
-    }
+    setFieldErrors((prev) =>
+      prev[fieldKey] ? { ...prev, [fieldKey]: "" } : prev,
+    );
   };
 
-  const handlePhoneChange = (event) => {
-    setForm((prev) => ({ ...prev, phone: toPhoneLocal(event.target.value) }));
-    if (fieldErrors.phone) {
-      setFieldErrors((prev) => ({ ...prev, phone: "" }));
-    }
-  };
+  // 정제 없는 필드(비번·비번확인·이름) — 형식은 제출 시 validateSignupForm 이 본다.
+  // 이름은 한글이 유효하므로 여기서 손대지 않는다.
+  const handleChange = (event) =>
+    updateField(event.target.name, event.target.value);
+
+  // 정제 있는 필드 — IME 조합 중엔 원문을 두고 조합이 끝났을 때만 정제한다.
+  const memberIdChange = useSanitizedChange(sanitizeMemberId, (v) =>
+    updateField("memberId", v),
+  );
+  const emailIdChange = useSanitizedChange(sanitizeEmail, (v) =>
+    updateField("emailId", v),
+  );
+  const emailDomainChange = useSanitizedChange(sanitizeEmail, (v) =>
+    updateField("emailDomain", v),
+  );
+  const phoneChange = useSanitizedChange(toPhoneLocal, (v) =>
+    updateField("phone", v),
+  );
 
   const handleTogglePassword = () => {
     setIsPasswordVisible((prev) => !prev);
@@ -198,7 +201,7 @@ function SignupPage() {
             label="아이디"
             name="memberId"
             value={form.memberId}
-            onChange={handleChange}
+            {...memberIdChange}
             placeholder={MEMBER_HINT.memberId}
             maxLength={MEMBER_MAX.memberId}
             autoComplete="username"
@@ -251,7 +254,7 @@ function SignupPage() {
                   name="phone"
                   inputMode="numeric"
                   value={form.phone}
-                  onChange={handlePhoneChange}
+                  {...phoneChange}
                   placeholder={MEMBER_HINT.phone}
                   maxLength={MEMBER_MAX.phoneLocal}
                   autoComplete="tel-national"
@@ -284,7 +287,7 @@ function SignupPage() {
                   id={emailLocalId}
                   name="emailId"
                   value={form.emailId}
-                  onChange={handleChange}
+                  {...emailIdChange}
                   placeholder="이메일 아이디"
                   maxLength={EMAIL_MAX}
                   autoComplete="off"
@@ -296,7 +299,7 @@ function SignupPage() {
                   aria-label="이메일 도메인"
                   name="emailDomain"
                   value={form.emailDomain}
-                  onChange={handleChange}
+                  {...emailDomainChange}
                   placeholder="naver.com"
                   maxLength={EMAIL_MAX}
                   autoComplete="off"

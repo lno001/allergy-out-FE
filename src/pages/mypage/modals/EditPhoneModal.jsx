@@ -6,6 +6,7 @@ import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
 import SplitField from "../../../components/common/SplitField";
 import { ToastContext } from "../../../components/common/ToastProvider";
+import useSanitizedChange from "../../../hooks/useSanitizedChange";
 import useSubmitAction from "../../../hooks/useSubmitAction";
 import { splitFormError } from "../../../utils/apiError";
 import {
@@ -43,10 +44,10 @@ function EditPhoneModal({ isOpen, onClose, currentPhone, onSuccess }) {
 
   const canSubmit = phone.length === MEMBER_MAX.phoneLocal;
 
-  const handlePhoneChange = (e) => {
-    setPhone(toPhoneLocal(e.target.value));
+  const phoneChange = useSanitizedChange(toPhoneLocal, (v) => {
+    setPhone(v);
     if (error) setError("");
-  };
+  });
 
   const handleClose = () => {
     setPhone("");
@@ -118,7 +119,7 @@ function EditPhoneModal({ isOpen, onClose, currentPhone, onSuccess }) {
                   maxLength={MEMBER_MAX.phoneLocal}
                   placeholder={MEMBER_HINT.phone}
                   value={phone}
-                  onChange={handlePhoneChange}
+                  {...phoneChange}
                   aria-describedby={describedBy}
                   aria-invalid={invalid}
                 />

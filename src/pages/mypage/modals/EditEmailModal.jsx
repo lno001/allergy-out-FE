@@ -6,6 +6,7 @@ import Input from "../../../components/common/Input";
 import Modal from "../../../components/common/Modal";
 import SplitField from "../../../components/common/SplitField";
 import { ToastContext } from "../../../components/common/ToastProvider";
+import useSanitizedChange from "../../../hooks/useSanitizedChange";
 import useSubmitAction from "../../../hooks/useSubmitAction";
 import { splitFormError } from "../../../utils/apiError";
 import {
@@ -69,6 +70,15 @@ function EditEmailModal({ isOpen, onClose, currentEmail, onSuccess }) {
   const clearError = () => {
     if (error) setError("");
   };
+
+  const localChange = useSanitizedChange(sanitizeEmail, (v) => {
+    setLocal(v);
+    clearError();
+  });
+  const domainChange = useSanitizedChange(sanitizeEmail, (v) => {
+    setDomain(v);
+    clearError();
+  });
 
   const handleClose = () => {
     setLocal("");
@@ -143,10 +153,7 @@ function EditEmailModal({ isOpen, onClose, currentEmail, onSuccess }) {
                     placeholder="이메일 아이디"
                     maxLength={EMAIL_MAX}
                     value={local}
-                    onChange={(e) => {
-                      setLocal(sanitizeEmail(e.target.value));
-                      clearError();
-                    }}
+                    {...localChange}
                     aria-describedby={describedBy}
                     aria-invalid={invalid}
                   />
@@ -157,10 +164,7 @@ function EditEmailModal({ isOpen, onClose, currentEmail, onSuccess }) {
                     placeholder="naver.com"
                     maxLength={EMAIL_MAX}
                     value={domain}
-                    onChange={(e) => {
-                      setDomain(sanitizeEmail(e.target.value));
-                      clearError();
-                    }}
+                    {...domainChange}
                     aria-describedby={describedBy}
                     aria-invalid={invalid}
                   />
