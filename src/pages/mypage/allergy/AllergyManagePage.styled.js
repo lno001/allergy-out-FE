@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 import { theme } from "../../../styles/theme";
 
@@ -135,12 +135,21 @@ export const QuickAddButton = styled.button`
     border-color: ${theme.color.primary};
   }
 
-  /* 묶음 버튼 — 항목이 전부 등록돼 있으면 눌린 상태로 표시(다시 누르면 전체 해제) */
-  ${({ $active }) => $active && `
-    background-color: ${theme.color.primary};
-    border-color: ${theme.color.primary};
-    color: ${theme.color.textOnPrimary};
-  `}
+  /* 묶음 버튼 — 항목이 전부 등록돼 있으면 눌린 상태로 표시(다시 누르면 전체 해제).
+     위의 기본 &:hover보다 이 블록이 나중에 선언돼야, hover 시에도 배경이 primary50로
+     안 빠지고 색이 그대로 유지된다 — 안 그러면 흰 글자가 옅은 배경 위에 남아 안 보임. */
+  ${({ $active }) =>
+    $active &&
+    css`
+      background-color: ${theme.color.primary};
+      border-color: ${theme.color.primary};
+      color: ${theme.color.textOnPrimary};
+
+      &:hover {
+        background-color: ${theme.color.primaryHover};
+        border-color: ${theme.color.primaryHover};
+      }
+    `}
 `;
 
 /* grid 대신 flex-wrap + align-items:flex-start — 하위 품목이 펼쳐져 항목마다 높이가
