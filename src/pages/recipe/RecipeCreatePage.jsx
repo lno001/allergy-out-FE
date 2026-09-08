@@ -7,6 +7,13 @@ import Input from "../../components/common/Input";
 import { ToastContext } from "../../components/common/ToastProvider";
 import { createRecipe } from "../../apis/recipeApi";
 import {
+  COOKING_METHODS,
+  MAIN_MATERIAL_MAX_LENGTH,
+  NUTRITION_FIELDS,
+  RECIPE_TYPES,
+  emptyNutrition,
+} from "../../constants/recipe";
+import {
   PageWrapper,
   PageHeader,
   PageHeading,
@@ -21,6 +28,10 @@ import {
   HelperRow,
   CharCount,
   TextArea,
+  SelectInput,
+  FieldGrid,
+  NutritionGrid,
+  NutritionField,
   MaterialList,
   MaterialRow,
   TextInput,
@@ -62,6 +73,14 @@ import {
  * @property {string} recipeTitle
  * @property {string} recipeInfo
  * @property {File}   recipeMainImg
+ * @property {string} cookingMethod   조리 방법 (COOKING_METHODS 중 하나 — 필수)
+ * @property {string} recipeType      요리 종류 (RECIPE_TYPES 중 하나 — 필수)
+ * @property {string} [mainMaterial]  메인 재료 1개 (≤20자). 빈 문자열로 보내면 서버가 null
+ * @property {string} [calorie]       칼로리(kcal) — 숫자 문자열
+ * @property {string} [carbohydrate]  탄수화물(g)
+ * @property {string} [protein]       단백질(g)
+ * @property {string} [fat]           지방(g)
+ * @property {string} [sodium]        나트륨(mg)
  * @property {{ materialName: string, amount: string }[]}            materialList
  * @property {{ stepOrder: number, stepInfo: string, stepImg?: File }[]} stepList
  */
@@ -106,6 +125,10 @@ function RecipeCreatePage() {
 
   const [recipeTitle, setRecipeTitle] = useState("");
   const [recipeInfo, setRecipeInfo] = useState("");
+  const [cookingMethod, setCookingMethod] = useState(""); // "" = 미선택 (필수)
+  const [recipeType, setRecipeType] = useState(""); // "" = 미선택 (필수)
+  const [mainMaterial, setMainMaterial] = useState("");
+  const [nutrition, setNutrition] = useState(emptyNutrition()); // { calorie: "", ... }
   const [mainImage, setMainImage] = useState(null);
   const [mainImagePreview, setMainImagePreview] = useState("");
   const [materials, setMaterials] = useState([emptyMaterial()]);
@@ -153,6 +176,11 @@ function RecipeCreatePage() {
       setSubmitError("요리 제목과 대표 이미지는 필수입니다.");
       return;
     }
+    // 셀렉트는 native required 가 걸리지만, 혹시 몰라 한 번 더 (placeholder 값 전송 방지)
+    if (!cookingMethod || !recipeType) {
+      setSubmitError("조리 방법과 요리 종류를 선택해주세요.");
+      return;
+    }
     setSubmitError("");
 
     // 명세(레시피등록 V1.8 "요청 데이터 형식") 키 순서대로 FormData 구성.
@@ -161,6 +189,15 @@ function RecipeCreatePage() {
     formData.append("recipeTitle", recipeTitle.trim());
     formData.append("recipeInfo", recipeInfo.trim());
     formData.append("recipeMainImg", mainImage);
+
+    // 분류(필수) + 주재료·영양성분(선택). 선택 필드는 빈 문자열로 보내면 서버가 null 처리.
+    formData.append("cookingMethod", cookingMethod);
+    formData.append("recipeType", recipeType);
+    formData.append("mainMaterial", mainMaterial.trim());
+    NUTRITION_FIELDS.forEach(({ key }) => {
+      formData.append(key, String(nutrition[key] ?? "").trim());
+    });
+
     materials.forEach((m, i) => {
       formData.append(`materialList[${i}].materialName`, m.materialName.trim());
       formData.append(`materialList[${i}].amount`, m.amount.trim());
@@ -294,6 +331,103 @@ function RecipeCreatePage() {
               {materials.length >= MAX_LIST_ITEMS &&
                 `(최대 ${MAX_LIST_ITEMS}개)`}
             </AddRowButton>
+          </Field>
+        </SectionCard>
+
+        {/* ---------------- 분류 & 영양 정보 ---------------- */}
+        <SectionCard>
+          <SectionTitle>분류 &amp; 영양 정보</SectionTitle>
+
+          <FieldGrid>
+            <Field>
+              <FieldLabelRow>
+                <FieldLabelText htmlFor="recipe-type">요리 종류</FieldLabelText>
+                <RequiredMark aria-hidden="true">*</RequiredMark>
+              </FieldLabelRow>
+              <SelectInput
+                id="recipe-type"
+                required
+                value={recipeType}
+                onChange={(e) => setRecipeType(e.target.value)}
+              >
+                <option value="" disabled>
+                  선택하세요
+                </option>
+                {RECIPE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+
+            <Field>
+              <FieldLabelRow>
+                <FieldLabelText htmlFor="cooking-method">
+                  조리 방법
+                </FieldLabelText>
+                <RequiredMark aria-hidden="true">*</RequiredMark>
+              </FieldLabelRow>
+              <SelectInput
+                id="cooking-method"
+                required
+                value={cookingMethod}
+                onChange={(e) => setCookingMethod(e.target.value)}
+              >
+                <option value="" disabled>
+                  선택하세요
+                </option>
+                {COOKING_METHODS.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          </FieldGrid>
+
+          <Field>
+            <FieldLabelRow>
+              <FieldLabelText htmlFor="main-material">메인 재료</FieldLabelText>
+            </FieldLabelRow>
+            <TextInput
+              id="main-material"
+              type="text"
+              placeholder="대표 재료 1개 (예: 돼지고기)"
+              value={mainMaterial}
+              maxLength={MAIN_MATERIAL_MAX_LENGTH}
+              onChange={(e) => setMainMaterial(e.target.value)}
+            />
+          </Field>
+
+          <Field>
+            <FieldLabelRow>
+              <FieldLabelText>영양 정보 (선택)</FieldLabelText>
+            </FieldLabelRow>
+            <NutritionGrid>
+              {NUTRITION_FIELDS.map(({ key, label, unit }) => (
+                <NutritionField key={key}>
+                  <span>
+                    {label} <span className="unit">({unit})</span>
+                  </span>
+                  <TextInput
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder="0"
+                    aria-label={`${label} (${unit})`}
+                    value={nutrition[key]}
+                    onChange={(e) =>
+                      setNutrition((prev) => ({
+                        ...prev,
+                        [key]: e.target.value,
+                      }))
+                    }
+                  />
+                </NutritionField>
+              ))}
+            </NutritionGrid>
           </Field>
         </SectionCard>
 

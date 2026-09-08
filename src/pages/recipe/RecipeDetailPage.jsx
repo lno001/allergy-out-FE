@@ -8,6 +8,11 @@ import { ToastContext } from "../../components/common/ToastProvider";
 import { useAuth } from "../../hooks/useAuth";
 import { deleteRecipe, getRecipe } from "../../apis/recipeApi";
 import {
+  EMPTY_TEXT,
+  NUTRITION_FIELDS,
+  isBlankValue,
+} from "../../constants/recipe";
+import {
   PageWrapper,
   TopBar,
   BackButton,
@@ -15,10 +20,20 @@ import {
   HeroImage,
   HeroInfo,
   RecipeTitle,
+  SpecRow,
+  TypeBadge,
+  MethodText,
+  MainMaterial,
   RecipeTip,
   MetaRow,
   Author,
   AuthorAvatar,
+  ViewCount,
+  NutritionStrip,
+  NutritionItem,
+  NutritionLabel,
+  NutritionValue,
+  NutritionUnit,
   MaterialSection,
   SectionLabel,
   MaterialList,
@@ -61,6 +76,15 @@ import {
  * @property {string}  memberName        작성자 이름
  * @property {string}  createDate        "YYYY-MM-DD"
  * @property {boolean} isBookmarked      현재 로그인 사용자의 즐겨찾기 여부 (현재 백엔드 false 고정)
+ * @property {string}  recipeType        요리 종류 (밥/국&찌개/반찬/일품/후식/기타 — NOT NULL)
+ * @property {string}  cookingMethod     조리 방법 (굽기/튀기기/볶기/찌기/끓이기/기타 — NOT NULL)
+ * @property {(number|null)} calorie       칼로리(kcal). 단위는 프론트가 붙임
+ * @property {(number|null)} carbohydrate  탄수화물(g)
+ * @property {(number|null)} protein       단백질(g)
+ * @property {(number|null)} fat           지방(g)
+ * @property {(number|null)} sodium        나트륨(mg)
+ * @property {(string|null)} mainMaterial  메인 재료 1개 (콤마 리스트 아님)
+ * @property {number}  viewCount         조회수 — 상세 조회 1회당 서버가 +1
  */
 
 /**
@@ -198,6 +222,26 @@ function RecipeDetailPage() {
 
         <HeroInfo>
           <RecipeTitle>{recipe.recipeTitle}</RecipeTitle>
+
+          {/* 요리 종류(뱃지) + 조리 방법(텍스트) — 백엔드 계약상 둘 다 NOT NULL.
+              (필드 배포 전 응답엔 없을 수 있어 방어적으로 렌더) */}
+          {(recipe.recipeType || recipe.cookingMethod) && (
+            <SpecRow>
+              {recipe.recipeType && <TypeBadge>{recipe.recipeType}</TypeBadge>}
+              {recipe.cookingMethod && (
+                <MethodText>{recipe.cookingMethod}</MethodText>
+              )}
+            </SpecRow>
+          )}
+
+          {/* 메인 재료 1개 — 없으면 "미입력" */}
+          <MainMaterial>
+            주재료 ·{" "}
+            {isBlankValue(recipe.mainMaterial)
+              ? EMPTY_TEXT
+              : recipe.mainMaterial}
+          </MainMaterial>
+
           {recipe.recipeInfo && <RecipeTip>{recipe.recipeInfo}</RecipeTip>}
 
           <MetaRow>
@@ -206,9 +250,31 @@ function RecipeDetailPage() {
               작성자 : {recipe.memberName}
             </Author>
             <span>작성일 : {formatDate(recipe.createDate)}</span>
+            <ViewCount>
+              조회수 {Number(recipe.viewCount ?? 0).toLocaleString()}
+            </ViewCount>
           </MetaRow>
         </HeroInfo>
       </Hero>
+
+      {/* ---------------- 영양성분 (5종 모두 nullable → 없으면 "미입력") ---------------- */}
+      <NutritionStrip>
+        {NUTRITION_FIELDS.map(({ key, label, unit }) => (
+          <NutritionItem key={key}>
+            <NutritionLabel>{label}</NutritionLabel>
+            <NutritionValue>
+              {isBlankValue(recipe[key]) ? (
+                EMPTY_TEXT
+              ) : (
+                <>
+                  {recipe[key]}
+                  <NutritionUnit>{unit}</NutritionUnit>
+                </>
+              )}
+            </NutritionValue>
+          </NutritionItem>
+        ))}
+      </NutritionStrip>
 
       {/* ---------------- 재료 ---------------- */}
       <MaterialSection>

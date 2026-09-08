@@ -9,6 +9,14 @@ import { ToastContext } from "../../components/common/ToastProvider";
 import { useAuth } from "../../hooks/useAuth";
 import { getRecipe, updateRecipe } from "../../apis/recipeApi";
 import {
+  COOKING_METHODS,
+  MAIN_MATERIAL_MAX_LENGTH,
+  NUTRITION_FIELDS,
+  RECIPE_TYPES,
+  emptyNutrition,
+  nutritionFromRecipe,
+} from "../../constants/recipe";
+import {
   PageWrapper,
   PageHeader,
   PageHeading,
@@ -23,6 +31,10 @@ import {
   HelperRow,
   CharCount,
   TextArea,
+  SelectInput,
+  FieldGrid,
+  NutritionGrid,
+  NutritionField,
   MaterialList,
   MaterialRow,
   TextInput,
@@ -66,7 +78,15 @@ import {
  * multipart/form-data 폼 필드 (camelCase — 명세서 대문자 표기 무시).
  * @property {string} recipeTitle
  * @property {string} recipeInfo
- * @property {File}   [recipeMainImg]                              대표 이미지 (교체 시에만)
+ * @property {string} cookingMethod   조리 방법 (필수)
+ * @property {string} recipeType      요리 종류 (필수)
+ * @property {string} mainMaterial    메인 재료 1개 — PATCH 전체 교체라 비어도 항상 전송 (빈 문자열 → 서버 null)
+ * @property {string} calorie         칼로리(kcal) 숫자 문자열 — 위와 동일하게 항상 전송
+ * @property {string} carbohydrate    탄수화물(g)
+ * @property {string} protein         단백질(g)
+ * @property {string} fat             지방(g)
+ * @property {string} sodium          나트륨(mg)
+ * @property {File}   [recipeMainImg]                              대표 이미지 (교체 시에만 — 이미지는 미전송=유지)
  * @property {{ materialNo?: number, materialName: string, amount: string }[]} materialList
  * @property {{ stepNo?: number, stepOrder: number, stepInfo: string, stepImg?: File, removeStepImg?: "true" }[]} stepList
  */
@@ -125,6 +145,10 @@ function RecipeEditPage() {
 
   const [recipeTitle, setRecipeTitle] = useState("");
   const [recipeInfo, setRecipeInfo] = useState("");
+  const [cookingMethod, setCookingMethod] = useState(""); // 필수 — 로드 시 기존 값으로 채움
+  const [recipeType, setRecipeType] = useState(""); // 필수
+  const [mainMaterial, setMainMaterial] = useState("");
+  const [nutrition, setNutrition] = useState(emptyNutrition()); // { calorie: "", ... }
   const [mainImageFile, setMainImageFile] = useState(null); // null = 미변경
   const [mainImagePreview, setMainImagePreview] = useState(""); // 기존 URL 또는 새 objectURL
   const [materials, setMaterials] = useState([]);
@@ -146,6 +170,10 @@ function RecipeEditPage() {
         setAuthorMemberNo(recipe.memberNo ?? null);
         setRecipeTitle(recipe.recipeTitle ?? "");
         setRecipeInfo(recipe.recipeInfo ?? "");
+        setCookingMethod(recipe.cookingMethod ?? "");
+        setRecipeType(recipe.recipeType ?? "");
+        setMainMaterial(recipe.mainMaterial ?? "");
+        setNutrition(nutritionFromRecipe(recipe));
         setMainImagePreview(recipe.recipesImgPath ?? "");
         setMaterials(
           (data.materials ?? []).map((m) => ({
@@ -249,11 +277,25 @@ function RecipeEditPage() {
       setSubmitError("요리 제목은 필수입니다.");
       return;
     }
+    if (!cookingMethod || !recipeType) {
+      setSubmitError("조리 방법과 요리 종류를 선택해주세요.");
+      return;
+    }
     setSubmitError("");
 
     const formData = new FormData();
     formData.append("recipeTitle", recipeTitle.trim());
     formData.append("recipeInfo", recipeInfo.trim());
+
+    // PATCH = "폼 전체 = 최종 상태". 스칼라 필드는 항상 전송하고, 비웠으면 빈 문자열을
+    // 보낸다 (서버가 빈 문자열 → null 로 정규화). 이미지 필드만 "미전송 = 유지" 규칙.
+    formData.append("cookingMethod", cookingMethod);
+    formData.append("recipeType", recipeType);
+    formData.append("mainMaterial", mainMaterial.trim());
+    NUTRITION_FIELDS.forEach(({ key }) => {
+      formData.append(key, String(nutrition[key] ?? "").trim());
+    });
+
     if (mainImageFile) formData.append("recipeMainImg", mainImageFile); // 교체했을 때만
 
     materials.forEach((material, i) => {
@@ -422,6 +464,103 @@ function RecipeEditPage() {
               {materials.length >= MAX_LIST_ITEMS &&
                 `(최대 ${MAX_LIST_ITEMS}개)`}
             </AddRowButton>
+          </Field>
+        </SectionCard>
+
+        {/* ---------------- 분류 & 영양 정보 ---------------- */}
+        <SectionCard>
+          <SectionTitle>분류 &amp; 영양 정보</SectionTitle>
+
+          <FieldGrid>
+            <Field>
+              <FieldLabelRow>
+                <FieldLabelText htmlFor="recipe-type">요리 종류</FieldLabelText>
+                <RequiredMark aria-hidden="true">*</RequiredMark>
+              </FieldLabelRow>
+              <SelectInput
+                id="recipe-type"
+                required
+                value={recipeType}
+                onChange={(e) => setRecipeType(e.target.value)}
+              >
+                <option value="" disabled>
+                  선택하세요
+                </option>
+                {RECIPE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+
+            <Field>
+              <FieldLabelRow>
+                <FieldLabelText htmlFor="cooking-method">
+                  조리 방법
+                </FieldLabelText>
+                <RequiredMark aria-hidden="true">*</RequiredMark>
+              </FieldLabelRow>
+              <SelectInput
+                id="cooking-method"
+                required
+                value={cookingMethod}
+                onChange={(e) => setCookingMethod(e.target.value)}
+              >
+                <option value="" disabled>
+                  선택하세요
+                </option>
+                {COOKING_METHODS.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+          </FieldGrid>
+
+          <Field>
+            <FieldLabelRow>
+              <FieldLabelText htmlFor="main-material">메인 재료</FieldLabelText>
+            </FieldLabelRow>
+            <TextInput
+              id="main-material"
+              type="text"
+              placeholder="대표 재료 1개 (예: 돼지고기)"
+              value={mainMaterial}
+              maxLength={MAIN_MATERIAL_MAX_LENGTH}
+              onChange={(e) => setMainMaterial(e.target.value)}
+            />
+          </Field>
+
+          <Field>
+            <FieldLabelRow>
+              <FieldLabelText>영양 정보 (선택)</FieldLabelText>
+            </FieldLabelRow>
+            <NutritionGrid>
+              {NUTRITION_FIELDS.map(({ key, label, unit }) => (
+                <NutritionField key={key}>
+                  <span>
+                    {label} <span className="unit">({unit})</span>
+                  </span>
+                  <TextInput
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputMode="decimal"
+                    placeholder="0"
+                    aria-label={`${label} (${unit})`}
+                    value={nutrition[key]}
+                    onChange={(e) =>
+                      setNutrition((prev) => ({
+                        ...prev,
+                        [key]: e.target.value,
+                      }))
+                    }
+                  />
+                </NutritionField>
+              ))}
+            </NutritionGrid>
           </Field>
         </SectionCard>
 
