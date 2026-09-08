@@ -10,6 +10,7 @@ import EditPasswordModal from "./modals/EditPasswordModal";
 import EditPhoneModal from "./modals/EditPhoneModal";
 import EditProfileImageModal from "./modals/EditProfileImageModal";
 import WithdrawModal from "./modals/WithdrawModal";
+import RaspSection from "./RaspSection";
 import {
   AvatarEditButton,
   AvatarEditIcon,
@@ -142,6 +143,8 @@ function ProfileEditPage() {
           </FieldValueRow>
         </FieldBlock>
       </FieldGrid>
+
+      <RaspSection />
 
       <EditNameModal
         isOpen={openModal === "name"}
