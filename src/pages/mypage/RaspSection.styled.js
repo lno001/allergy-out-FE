@@ -9,15 +9,6 @@ export const Wrap = styled.div`
   gap: ${theme.space.xl};
 `;
 
-export const DemoNotice = styled.p`
-  margin: 0;
-  font-size: ${theme.fontSize.sm};
-  color: ${theme.color.sub};
-  background-color: ${theme.color.bgSoft};
-  border-radius: ${theme.radius.md};
-  padding: ${theme.space.md} ${theme.space.lg};
-`;
-
 export const BodyInputRow = styled.div`
   display: flex;
   gap: ${theme.space.lg};

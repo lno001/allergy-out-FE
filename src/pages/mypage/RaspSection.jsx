@@ -4,11 +4,7 @@ import Loading from "../../components/common/Loading";
 import { useBodyProfile } from "../../hooks/useBodyProfile";
 import { useStepsDashboard } from "../../hooks/useStepsDashboard";
 import { calculateCaloriesBurned, estimateBmr } from "../../utils/calorieCalc";
-import {
-  SectionDescription,
-  SectionDivider,
-  SectionTitle,
-} from "./ProfileEditPage.styled";
+import { SectionDivider, SectionTitle } from "./ProfileEditPage.styled";
 import {
   AxisLabel,
   AxisRow,
@@ -16,7 +12,6 @@ import {
   ChartBlock,
   ChartSvg,
   ChartTitle,
-  DemoNotice,
   EmptyNote,
   StatCard,
   StatGrid,
@@ -94,10 +89,6 @@ function RaspSection() {
     <>
       <SectionDivider />
       <SectionTitle>라즈베리파이 연동</SectionTitle>
-      <SectionDescription>
-        라즈베리파이 만보기 연동 기능을 시연합니다. 아래 걸음 데이터는 개인별 기록이 아니라
-        팀에서 운영 중인 데모 기기의 실제 측정값이에요.
-      </SectionDescription>
 
       <Wrap>
         {error && <Alert variant="danger">{error}</Alert>}
@@ -108,11 +99,6 @@ function RaspSection() {
           <EmptyNote>아직 데모 기기가 연동되지 않았어요.</EmptyNote>
         ) : (
           <>
-            <DemoNotice>
-              키/몸무게를 입력하면 데모 걸음 수 기준 활동 칼로리에 기초대사량(체중 기반 간이
-              추정치)을 더해 총 소모 칼로리를 계산해서 보여줘요.
-            </DemoNotice>
-
             <BodyInputRow>
               <Input
                 label="키 (cm)"
@@ -128,6 +114,12 @@ function RaspSection() {
                 onChange={(e) => setWeightKg(e.target.value)}
                 placeholder="70"
               />
+              <StatCard>
+                <StatLabel>기초대사량 (추정)</StatLabel>
+                <StatValue>
+                  {bmr.toLocaleString()} <StatUnit>kcal</StatUnit>
+                </StatValue>
+              </StatCard>
             </BodyInputRow>
 
             <StatGrid>
@@ -138,9 +130,9 @@ function RaspSection() {
                 </StatValue>
               </StatCard>
               <StatCard>
-                <StatLabel>기초대사량 (추정)</StatLabel>
+                <StatLabel>걸음 소모 칼로리 (추정)</StatLabel>
                 <StatValue>
-                  {bmr.toLocaleString()} <StatUnit>kcal</StatUnit>
+                  {activityCalories.toLocaleString()} <StatUnit>kcal</StatUnit>
                 </StatValue>
               </StatCard>
               <StatCard>
