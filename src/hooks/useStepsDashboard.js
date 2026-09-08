@@ -2,13 +2,21 @@ import { useEffect, useState } from "react";
 
 import { getDailySteps, getTodaySteps } from "../apis/raspApi";
 
+/** Date → "YYYY-MM-DD" (로컬 기준). toISOString()은 UTC로 바꿔서 자정~오전 시간대에 하루 밀림 */
+function toLocalDateString(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 /** 최근 7일 날짜 배열(오늘 포함, 오름차순) — "YYYY-MM-DD" */
 function last7Days() {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
+    days.push(toLocalDateString(d));
   }
   return days;
 }

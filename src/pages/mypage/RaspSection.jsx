@@ -18,6 +18,7 @@ import {
   StatLabel,
   StatUnit,
   StatValue,
+  WeekAxisLabel,
   Wrap,
 } from "./RaspSection.styled";
 
@@ -45,17 +46,25 @@ function buildLineChart(points) {
   return { polyline, area, last };
 }
 
-/** days(최근 7일, 항상 7개)를 막대 좌표로 변환 */
+/**
+ * days(최근 7일, 항상 7개)를 막대 좌표로 변환.
+ * 아래 날짜 라벨(WeekAxisLabel)이 CSS flexbox로 전체 너비를 N등분해서 각 칸 가운데 정렬되므로,
+ * 막대도 같은 방식(전체 너비를 N등분 → 그 칸 중심에 배치)으로 계산해야 막대와 라벨이 정렬된다.
+ * 고정 픽셀(x = 10 + i*80)로 계산하면 막대들이 실제 칸 너비보다 좁게 몰려서, 뒤로 갈수록
+ * 라벨과 막대 중심이 어긋난다(특히 마지막 "오늘" 막대에서 어긋남이 가장 커짐).
+ */
 function buildBars(days) {
   const max = Math.max(...days.map((d) => d.steps), 1);
-  const barWidth = 60;
+  const slotWidth = CHART_W / days.length;
   const gap = 20;
+  const barWidth = slotWidth - gap;
   return days.map((d, i) => {
     const height = Math.round((d.steps / max) * (BASELINE_Y - TOP_Y));
+    const slotCenter = slotWidth * (i + 0.5);
     return {
-      x: 10 + i * (barWidth + gap),
+      x: Math.round(slotCenter - barWidth / 2),
       y: BASELINE_Y - height,
-      width: barWidth,
+      width: Math.round(barWidth),
       height,
       isToday: i === days.length - 1,
       label: `${d.date.slice(5, 7)}/${d.date.slice(8, 10)}`,
@@ -188,7 +197,9 @@ function RaspSection() {
                   </ChartSvg>
                   <AxisRow>
                     {bars.map((bar) => (
-                      <AxisLabel key={bar.label}>{bar.label}</AxisLabel>
+                      <WeekAxisLabel key={bar.label} data-today={bar.isToday}>
+                        {bar.label}
+                      </WeekAxisLabel>
                     ))}
                   </AxisRow>
                 </>

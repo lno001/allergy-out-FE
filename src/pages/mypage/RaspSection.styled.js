@@ -89,6 +89,18 @@ export const AxisLabel = styled.span`
   }
 `;
 
+export const WeekAxisLabel = styled.span`
+  flex: 1;
+  text-align: center;
+  font-size: ${theme.fontSize.xs};
+  color: ${theme.color.placeholder};
+
+  &[data-today="true"] {
+    color: ${theme.color.primaryHover};
+    font-weight: ${theme.fontWeight.semibold};
+  }
+`;
+
 export const EmptyNote = styled.p`
   margin: 0;
   padding: ${theme.space.xl} 0;
