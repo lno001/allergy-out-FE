@@ -9,6 +9,38 @@ export const Wrap = styled.div`
   gap: ${theme.space.xl};
 `;
 
+export const RegisterRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${theme.space.lg};
+  flex-wrap: wrap;
+  background-color: ${theme.color.bgSoft};
+  border: 1.5px solid ${theme.color.border};
+  border-radius: ${theme.radius.md};
+  padding: ${theme.space.lg};
+`;
+
+export const DeviceBadge = styled.span`
+  font-size: ${theme.fontSize.sm};
+  color: ${theme.color.sub};
+`;
+
+export const DeviceNo = styled.span`
+  font-weight: ${theme.fontWeight.bold};
+  color: ${theme.color.text};
+`;
+
+export const CommandBox = styled.code`
+  display: block;
+  padding: ${theme.space.md} ${theme.space.lg};
+  background-color: ${theme.color.gray900};
+  color: ${theme.color.primary50};
+  border-radius: ${theme.radius.sm};
+  font-size: ${theme.fontSize.sm};
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+`;
+
 export const BodyInputRow = styled.div`
   display: flex;
   gap: ${theme.space.lg};

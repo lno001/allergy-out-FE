@@ -23,25 +23,25 @@ function last7Days() {
 
 /**
  * 마이페이지 "라즈베리파이 연동" 섹션의 걸음 대시보드(오늘 추이 + 최근 7일) 상태.
- * 실제로 연결 가능한 건 팀의 데모 기기 하나뿐이라 개인별 등록 여부는 따지지 않고,
- * 그냥 조회해서 404(DEVICE_NOT_FOUND)면 "아직 데모 기기가 연동되지 않음"으로 다룬다.
+ * 디바이스가 등록된 뒤에만 의미가 있으므로, enabled=false면 아무것도 호출하지 않는다
+ * (미등록 상태에서 굳이 또 404를 받아올 필요가 없음 — useDevice가 이미 그 정보를 앎).
  *
+ * @param {boolean} enabled
  * @returns {{
- *   points: { time: string, steps: number }[],
+ *   points: { createDate: string, steps: number }[],
  *   days: { date: string, steps: number }[],
  *   isLoading: boolean,
- *   isConnected: boolean,
  *   error: string|null,
  * }}
  */
-export function useStepsDashboard() {
+export function useStepsDashboard(enabled) {
   const [points, setPoints] = useState([]);
   const [days, setDays] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isConnected, setIsConnected] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let ignore = false;
     setIsLoading(true);
     setError(null);
@@ -49,7 +49,6 @@ export function useStepsDashboard() {
     Promise.all([getTodaySteps(), getDailySteps()])
       .then(([todayRes, dailyRes]) => {
         if (ignore) return;
-        setIsConnected(true);
         setPoints(todayRes.data?.points ?? []);
 
         // 문서 규칙: 데이터 없는 날은 응답에서 생략되므로, 프론트가 최근 7일 축을 직접 만들고
@@ -61,11 +60,7 @@ export function useStepsDashboard() {
       })
       .catch((err) => {
         if (ignore) return;
-        if (err.code === 404) {
-          setIsConnected(false); // 데모 기기가 아직 세팅 전 — 정상 상태
-        } else {
-          setError(err.msg ?? "걸음 데이터를 불러오지 못했습니다.");
-        }
+        setError(err.msg ?? "걸음 데이터를 불러오지 못했습니다.");
       })
       .finally(() => {
         if (!ignore) setIsLoading(false);
@@ -74,7 +69,7 @@ export function useStepsDashboard() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [enabled]);
 
-  return { points, days, isLoading, isConnected, error };
+  return { points, days, isLoading, error };
 }

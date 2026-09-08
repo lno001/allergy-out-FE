@@ -1,7 +1,12 @@
+import { useContext } from "react";
+
 import Alert from "../../components/common/Alert";
+import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
+import { ToastContext } from "../../components/common/ToastProvider";
 import { useBodyProfile } from "../../hooks/useBodyProfile";
+import { useDevice } from "../../hooks/useDevice";
 import { useStepsDashboard } from "../../hooks/useStepsDashboard";
 import { calculateCaloriesBurned, estimateBmr } from "../../utils/calorieCalc";
 import { SectionDivider, SectionTitle } from "./ProfileEditPage.styled";
@@ -12,7 +17,11 @@ import {
   ChartBlock,
   ChartSvg,
   ChartTitle,
+  CommandBox,
+  DeviceBadge,
+  DeviceNo,
   EmptyNote,
+  RegisterRow,
   StatCard,
   StatGrid,
   StatLabel,
@@ -73,14 +82,23 @@ function buildBars(days) {
 }
 
 /**
- * 마이페이지 "개인정보 관리" 탭 맨 아래에 붙는 라즈베리파이 만보기 연동 시연 섹션.
- * 실제로 기기를 연결할 수 있는 건 팀에서 운영하는 데모 기기 하나뿐이라, 이 화면은
- * 사용자별 기기 등록/연결 UI 없이 그 데모 기기의 걸음 데이터를 그대로 보여주는
- * "기능 시연" 성격이다. 키/몸무게만 조회자가 입력해서 칼로리 계산에 개인화를 더한다.
+ * 마이페이지 "개인정보 관리" 탭 맨 아래에 붙는 라즈베리파이 만보기 연동 섹션.
+ * 계정마다 기기를 등록할 수 있고(1회원 1디바이스, POST /api/rasp/devices 멱등 등록),
+ * 등록된 계정만 실제 걸음 데이터/차트를 볼 수 있다. 키/몸무게는 조회자가 입력해서
+ * 칼로리 계산에만 쓴다.
  */
 function RaspSection() {
-  const { points, days, isLoading, isConnected, error } = useStepsDashboard();
+  const showToast = useContext(ToastContext);
+  const { deviceNo, isLoading: isDeviceLoading, isRegistering, error: deviceError, register } =
+    useDevice();
+  const { points, days, isLoading: isStepsLoading, error: stepsError } =
+    useStepsDashboard(Boolean(deviceNo));
   const { heightCm, weightKg, setHeightCm, setWeightKg } = useBodyProfile();
+
+  const handleRegister = async () => {
+    const result = await register();
+    showToast(result.msg, result.ok ? "success" : "danger");
+  };
 
   const todaySteps = points.length > 0 ? points[points.length - 1].steps : 0;
   const activityCalories = calculateCaloriesBurned({
@@ -100,111 +118,131 @@ function RaspSection() {
       <SectionTitle>라즈베리파이 연동</SectionTitle>
 
       <Wrap>
-        {error && <Alert variant="danger">{error}</Alert>}
+        {deviceError && <Alert variant="danger">{deviceError}</Alert>}
 
-        {isLoading ? (
-          <Loading label="걸음 데이터를 불러오는 중" />
-        ) : !isConnected ? (
-          <EmptyNote>아직 데모 기기가 연동되지 않았어요.</EmptyNote>
+        {isDeviceLoading ? (
+          <Loading label="디바이스 정보를 불러오는 중" />
+        ) : deviceNo == null ? (
+          <RegisterRow>
+            <DeviceBadge>등록된 기기가 없어요.</DeviceBadge>
+            <Button onClick={handleRegister} loading={isRegistering} size="sm">
+              기기 연결하기
+            </Button>
+          </RegisterRow>
         ) : (
           <>
-            <BodyInputRow>
-              <Input
-                label="키 (cm)"
-                type="number"
-                value={heightCm}
-                onChange={(e) => setHeightCm(e.target.value)}
-                placeholder="200"
-              />
-              <Input
-                label="몸무게 (kg)"
-                type="number"
-                value={weightKg}
-                onChange={(e) => setWeightKg(e.target.value)}
-                placeholder="70"
-              />
-              <StatCard>
-                <StatLabel>기초대사량 (추정)</StatLabel>
-                <StatValue>
-                  {bmr.toLocaleString()} <StatUnit>kcal</StatUnit>
-                </StatValue>
-              </StatCard>
-            </BodyInputRow>
+            <RegisterRow>
+              <DeviceBadge>
+                내 디바이스 번호 <DeviceNo>{deviceNo}</DeviceNo>
+              </DeviceBadge>
+            </RegisterRow>
+            <CommandBox>./step_sender {deviceNo}</CommandBox>
 
-            <StatGrid>
-              <StatCard>
-                <StatLabel>오늘 걸음 수</StatLabel>
-                <StatValue>
-                  {todaySteps.toLocaleString()} <StatUnit>보</StatUnit>
-                </StatValue>
-              </StatCard>
-              <StatCard>
-                <StatLabel>걸음 소모 칼로리 (추정)</StatLabel>
-                <StatValue>
-                  {activityCalories.toLocaleString()} <StatUnit>kcal</StatUnit>
-                </StatValue>
-              </StatCard>
-              <StatCard>
-                <StatLabel>총 소모 칼로리 (추정)</StatLabel>
-                <StatValue>
-                  {totalCalories.toLocaleString()} <StatUnit>kcal</StatUnit>
-                </StatValue>
-              </StatCard>
-            </StatGrid>
+            {stepsError && <Alert variant="danger">{stepsError}</Alert>}
 
-            <ChartBlock>
-              <ChartTitle>오늘 걸음 추이</ChartTitle>
-              {line ? (
-                <>
-                  <ChartSvg viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
-                    <path d={line.area} fill="#EFF9F1" />
-                    <polyline
-                      points={line.polyline}
-                      fill="none"
-                      stroke="#2FA766"
-                      strokeWidth="3"
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                    />
-                    <circle cx={line.last[0]} cy={line.last[1]} r="5" fill="#1F8A52" />
-                  </ChartSvg>
-                  <AxisRow>
-                    <AxisLabel>{points[0].createDate.slice(11, 16)}</AxisLabel>
-                    <AxisLabel>{points[points.length - 1].createDate.slice(11, 16)}</AxisLabel>
-                  </AxisRow>
-                </>
-              ) : (
-                <EmptyNote>아직 오늘 걸음 기록이 없어요.</EmptyNote>
-              )}
-            </ChartBlock>
+            {isStepsLoading ? (
+              <Loading label="걸음 데이터를 불러오는 중" />
+            ) : (
+              <>
+                <BodyInputRow>
+                  <Input
+                    label="키 (cm)"
+                    type="number"
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(e.target.value)}
+                    placeholder="200"
+                  />
+                  <Input
+                    label="몸무게 (kg)"
+                    type="number"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                    placeholder="70"
+                  />
+                  <StatCard>
+                    <StatLabel>기초대사량 (추정)</StatLabel>
+                    <StatValue>
+                      {bmr.toLocaleString()} <StatUnit>kcal</StatUnit>
+                    </StatValue>
+                  </StatCard>
+                </BodyInputRow>
 
-            <ChartBlock>
-              <ChartTitle>최근 7일</ChartTitle>
-              {bars.length > 0 && (
-                <>
-                  <ChartSvg viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
-                    {bars.map((bar) => (
-                      <rect
-                        key={bar.label}
-                        x={bar.x}
-                        y={bar.y}
-                        width={bar.width}
-                        height={Math.max(bar.height, 2)}
-                        rx="6"
-                        fill={bar.isToday ? "#2FA766" : "#B7E4C4"}
-                      />
-                    ))}
-                  </ChartSvg>
-                  <AxisRow>
-                    {bars.map((bar) => (
-                      <WeekAxisLabel key={bar.label} data-today={bar.isToday}>
-                        {bar.label}
-                      </WeekAxisLabel>
-                    ))}
-                  </AxisRow>
-                </>
-              )}
-            </ChartBlock>
+                <StatGrid>
+                  <StatCard>
+                    <StatLabel>오늘 걸음 수</StatLabel>
+                    <StatValue>
+                      {todaySteps.toLocaleString()} <StatUnit>보</StatUnit>
+                    </StatValue>
+                  </StatCard>
+                  <StatCard>
+                    <StatLabel>걸음 소모 칼로리 (추정)</StatLabel>
+                    <StatValue>
+                      {activityCalories.toLocaleString()} <StatUnit>kcal</StatUnit>
+                    </StatValue>
+                  </StatCard>
+                  <StatCard>
+                    <StatLabel>총 소모 칼로리 (추정)</StatLabel>
+                    <StatValue>
+                      {totalCalories.toLocaleString()} <StatUnit>kcal</StatUnit>
+                    </StatValue>
+                  </StatCard>
+                </StatGrid>
+
+                <ChartBlock>
+                  <ChartTitle>오늘 걸음 추이</ChartTitle>
+                  {line ? (
+                    <>
+                      <ChartSvg viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
+                        <path d={line.area} fill="#EFF9F1" />
+                        <polyline
+                          points={line.polyline}
+                          fill="none"
+                          stroke="#2FA766"
+                          strokeWidth="3"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        <circle cx={line.last[0]} cy={line.last[1]} r="5" fill="#1F8A52" />
+                      </ChartSvg>
+                      <AxisRow>
+                        <AxisLabel>{points[0].createDate.slice(11, 16)}</AxisLabel>
+                        <AxisLabel>{points[points.length - 1].createDate.slice(11, 16)}</AxisLabel>
+                      </AxisRow>
+                    </>
+                  ) : (
+                    <EmptyNote>아직 오늘 걸음 기록이 없어요.</EmptyNote>
+                  )}
+                </ChartBlock>
+
+                <ChartBlock>
+                  <ChartTitle>최근 7일</ChartTitle>
+                  {bars.length > 0 && (
+                    <>
+                      <ChartSvg viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
+                        {bars.map((bar) => (
+                          <rect
+                            key={bar.label}
+                            x={bar.x}
+                            y={bar.y}
+                            width={bar.width}
+                            height={Math.max(bar.height, 2)}
+                            rx="6"
+                            fill={bar.isToday ? "#2FA766" : "#B7E4C4"}
+                          />
+                        ))}
+                      </ChartSvg>
+                      <AxisRow>
+                        {bars.map((bar) => (
+                          <WeekAxisLabel key={bar.label} data-today={bar.isToday}>
+                            {bar.label}
+                          </WeekAxisLabel>
+                        ))}
+                      </AxisRow>
+                    </>
+                  )}
+                </ChartBlock>
+              </>
+            )}
           </>
         )}
       </Wrap>
