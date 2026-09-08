@@ -160,8 +160,8 @@ function RaspSection() {
                     <circle cx={line.last[0]} cy={line.last[1]} r="5" fill="#1F8A52" />
                   </ChartSvg>
                   <AxisRow>
-                    <AxisLabel>{points[0].time.slice(11, 16)}</AxisLabel>
-                    <AxisLabel>{points[points.length - 1].time.slice(11, 16)}</AxisLabel>
+                    <AxisLabel>{points[0].createDate.slice(11, 16)}</AxisLabel>
+                    <AxisLabel>{points[points.length - 1].createDate.slice(11, 16)}</AxisLabel>
                   </AxisRow>
                 </>
               ) : (

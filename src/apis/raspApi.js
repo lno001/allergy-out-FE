@@ -10,7 +10,7 @@ import axiosInstance from "./axiosInstance";
 
 /** 오늘 걸음 추이 (당일 0시부터의 누적 보고 기록, 시간 오름차순). 데모 기기 미연동 시 404 */
 export function getTodaySteps() {
-  return axiosInstance.get("/rasp/steps/today");
+  return axiosInstance.get("/rasp/steps/day");
 }
 
 /** 최근 7일 걸음 수 (오늘 포함, 날짜 오름차순 — 데이터 없는 날은 응답에서 생략됨) */

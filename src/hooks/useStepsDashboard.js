@@ -47,7 +47,7 @@ export function useStepsDashboard() {
         // 문서 규칙: 데이터 없는 날은 응답에서 생략되므로, 프론트가 최근 7일 축을 직접 만들고
         // 없는 날짜는 0으로 채운다.
         const byDate = new Map(
-          (dailyRes.data?.days ?? []).map((d) => [d.date, d.steps]),
+          (dailyRes.data?.days ?? []).map((d) => [d.stepDate, d.steps]),
         );
         setDays(last7Days().map((date) => ({ date, steps: byDate.get(date) ?? 0 })));
       })
