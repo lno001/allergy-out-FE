@@ -20,14 +20,6 @@ export function getRecipeList(params) {
   return axiosInstance.get("/recipes", { params });
 }
 
-/**
- * @deprecated 구 `/api/recipes/filter` 전용 함수. 목록이 `GET /api/recipes` 로 통합되면서
- * getRecipeList 로 위임한다. 아직 이걸 쓰는 화면(home 등)이 마이그레이션되면 삭제.
- */
-export function getFilteredRecipes(params) {
-  return getRecipeList(params);
-}
-
 /** 레시피 단건 조회 */
 export function getRecipe(recipeNo) {
   return axiosInstance.get(`/recipes/${recipeNo}`);
