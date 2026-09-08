@@ -1,19 +1,31 @@
 import axiosInstance from "./axiosInstance";
 
-/** 레시피 목록 (페이지네이션 + 제목 검색어) — GET /api/recipes */
+/**
+ * 레시피 목록 — 검색·필터·정렬·페이지네이션 통합 엔드포인트.
+ * GET /api/recipes (구 /api/recipes/filter 흡수, 2026-09-08 계약)
+ *
+ * params (axiosInstance 가 한글/`&` 자동 인코딩):
+ * - page            : 0-based
+ * - size            : 1~50
+ * - keyword         : 제목 부분일치. 비면 생략
+ * - excludeMaterials: 콤마로 이은 재료명. 그 재료가 든 레시피 제외. 비면 생략
+ * - recipeType      : 요리 종류 완전일치 (밥/국&찌개/…). "전체" 면 생략
+ * - cookingMethod   : 조리 방법 완전일치. "전체" 면 생략
+ * - sort            : "latest"(기본) | "popular"(viewCount 내림차순)
+ * - applyMyAllergy  : "false" 면 회원 알러지 자동 제외 끔 (기본은 켜짐 = 생략)
+ *
+ * 응답 data: { recipes: RecipeListItem[], pageInfo: {...} }
+ */
 export function getRecipeList(params) {
   return axiosInstance.get("/recipes", { params });
 }
 
 /**
- * 레시피 목록 — 검색(keyword) + 알레르기 제외 필터(excludeMaterials) 통합.
- * GET /api/recipes/filter?page=&size=&keyword=&excludeMaterials=계란,우유
- * - keyword: 제목 부분일치. 없으면 생략
- * - excludeMaterials: 콤마로 이은 재료명 문자열. 그 재료가 든 레시피 제외. 없으면 생략
- * - 응답 구조는 getRecipeList 와 동일 (RecipeListResponse)
+ * @deprecated 구 `/api/recipes/filter` 전용 함수. 목록이 `GET /api/recipes` 로 통합되면서
+ * getRecipeList 로 위임한다. 아직 이걸 쓰는 화면(home 등)이 마이그레이션되면 삭제.
  */
 export function getFilteredRecipes(params) {
-  return axiosInstance.get("/recipes/filter", { params });
+  return getRecipeList(params);
 }
 
 /** 레시피 단건 조회 */
