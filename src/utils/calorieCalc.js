@@ -13,3 +13,13 @@ export function calculateCaloriesBurned({ steps, heightCm, weightKg }) {
   const calories = distanceKm * weightKg * 0.9;
   return Math.round(calories);
 }
+
+/**
+ * 기초대사량(BMR) 간이 추정. 표준 공식(Mifflin-St Jeor 등)은 나이·성별까지 필요한데
+ * 이 화면은 키·몸무게만 받으므로, 체중 1kg당 시간당 약 1kcal라는 통상적인 어림값을 써서
+ * 체중(kg) × 24시간으로 하루치를 추정한다 — 정밀한 값이 아니라 참고용 추정치.
+ */
+export function estimateBmr(weightKg) {
+  if (!weightKg) return 0;
+  return Math.round(weightKg * 24);
+}

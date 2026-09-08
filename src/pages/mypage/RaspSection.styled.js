@@ -29,7 +29,7 @@ export const BodyInputRow = styled.div`
 
 export const StatGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: ${theme.space.md};
 `;
 

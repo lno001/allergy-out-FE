@@ -15,5 +15,5 @@ export function getTodaySteps() {
 
 /** 최근 7일 걸음 수 (오늘 포함, 날짜 오름차순 — 데이터 없는 날은 응답에서 생략됨) */
 export function getDailySteps() {
-  return axiosInstance.get("/rasp/steps/daily");
+  return axiosInstance.get("/rasp/steps/week");
 }

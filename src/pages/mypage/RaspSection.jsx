@@ -3,7 +3,7 @@ import Input from "../../components/common/Input";
 import Loading from "../../components/common/Loading";
 import { useBodyProfile } from "../../hooks/useBodyProfile";
 import { useStepsDashboard } from "../../hooks/useStepsDashboard";
-import { calculateCaloriesBurned } from "../../utils/calorieCalc";
+import { calculateCaloriesBurned, estimateBmr } from "../../utils/calorieCalc";
 import {
   SectionDescription,
   SectionDivider,
@@ -79,11 +79,13 @@ function RaspSection() {
   const { heightCm, weightKg, setHeightCm, setWeightKg } = useBodyProfile();
 
   const todaySteps = points.length > 0 ? points[points.length - 1].steps : 0;
-  const calories = calculateCaloriesBurned({
+  const activityCalories = calculateCaloriesBurned({
     steps: todaySteps,
     heightCm: Number(heightCm),
     weightKg: Number(weightKg),
   });
+  const bmr = estimateBmr(Number(weightKg));
+  const totalCalories = activityCalories + bmr;
 
   const line = buildLineChart(points);
   const bars = days.length > 0 ? buildBars(days) : [];
@@ -107,7 +109,8 @@ function RaspSection() {
         ) : (
           <>
             <DemoNotice>
-              키/몸무게를 입력하면 데모 걸음 수를 기준으로 소모 칼로리를 계산해서 보여줘요.
+              키/몸무게를 입력하면 데모 걸음 수 기준 활동 칼로리에 기초대사량(체중 기반 간이
+              추정치)을 더해 총 소모 칼로리를 계산해서 보여줘요.
             </DemoNotice>
 
             <BodyInputRow>
@@ -135,9 +138,15 @@ function RaspSection() {
                 </StatValue>
               </StatCard>
               <StatCard>
-                <StatLabel>소모 칼로리 (추정)</StatLabel>
+                <StatLabel>기초대사량 (추정)</StatLabel>
                 <StatValue>
-                  {calories.toLocaleString()} <StatUnit>kcal</StatUnit>
+                  {bmr.toLocaleString()} <StatUnit>kcal</StatUnit>
+                </StatValue>
+              </StatCard>
+              <StatCard>
+                <StatLabel>총 소모 칼로리 (추정)</StatLabel>
+                <StatValue>
+                  {totalCalories.toLocaleString()} <StatUnit>kcal</StatUnit>
                 </StatValue>
               </StatCard>
             </StatGrid>
