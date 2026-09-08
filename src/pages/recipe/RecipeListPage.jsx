@@ -375,7 +375,13 @@ function RecipeListPage() {
   // 호출해야 요청에 토큰이 붙어 백엔드가 "그 회원의 알러지 재료를 뺀" 목록을 준다.
   // (/filter 는 인증 선택이라 토큰 없이 보내면 401 이 아니라 게스트 목록 200 이 와서 재시도도 안 걸림)
   // 지금 조회에 쓰는 검색/필터 상태를 한 묶음으로 (loadRecipes 에 그대로 펼쳐 넘긴다)
-  const queryState = { keyword, excludeMaterials, category, presets, excludeMyAllergy };
+  const queryState = {
+    keyword,
+    excludeMaterials,
+    category,
+    presets,
+    excludeMyAllergy,
+  };
 
   useEffect(() => {
     if (!isReady) return;

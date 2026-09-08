@@ -167,6 +167,68 @@ export const TextInput = styled.input`
   }
 `;
 
+/* 조리 방법 / 요리 종류 셀렉트 — TextInput 과 같은 흰 배경·회색 테두리 룩 */
+export const SelectInput = styled.select`
+  width: 100%;
+  padding: ${theme.space.md} ${theme.space.lg};
+  font-family: inherit;
+  font-size: ${theme.fontSize.md};
+  color: ${theme.color.text};
+  background: ${theme.color.white};
+  border: 1px solid ${theme.color.border};
+  border-radius: ${theme.radius.md};
+  transition: border-color ${theme.transition.base};
+  cursor: pointer;
+
+  /* placeholder(value="") 상태는 옅게 */
+  &:invalid {
+    color: ${theme.color.placeholder};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${theme.color.borderFocus};
+  }
+
+  &:user-invalid {
+    border-color: ${theme.color.borderDanger};
+  }
+`;
+
+/* 셀렉트 2개(조리방법·요리종류)를 한 줄에 나란히 — 좁으면 세로로 접힘 */
+export const FieldGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: ${theme.space.lg};
+`;
+
+/* 영양성분 숫자 입력 5칸 — 반응형으로 열 수 자동 조절 */
+export const NutritionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: ${theme.space.md};
+`;
+
+/* 숫자 입력 안 단위(kcal/g/mg)를 오른쪽에 겹쳐 보여주기 위한 래퍼 */
+export const NutritionField = styled.label`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.space.xs};
+  font-size: ${theme.fontSize.sm};
+  color: ${theme.color.text};
+
+  span {
+    font-weight: ${theme.fontWeight.medium};
+  }
+
+  /* 단위 접미사 — 입력창 오른쪽에 옅게 */
+  .unit {
+    font-size: ${theme.fontSize.xs};
+    font-weight: ${theme.fontWeight.regular};
+    color: ${theme.color.sub};
+  }
+`;
+
 export const IconButton = styled.button`
   display: flex;
   align-items: center;

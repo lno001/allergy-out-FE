@@ -95,6 +95,84 @@ export const Author = styled.span`
   gap: ${theme.space.sm};
 `;
 
+/* 조회수 — 메타 줄 오른쪽 끝으로 밀어 붙인다 */
+export const ViewCount = styled.span`
+  margin-left: auto;
+  flex-shrink: 0;
+`;
+
+/* ---------------- 분류(조리방법·요리종류) + 주재료 ---------------- */
+
+/* 제목 아래: [요리종류 뱃지] [조리방법 텍스트] 한 줄 */
+export const SpecRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: ${theme.space.sm};
+`;
+
+/* 요리 종류 — 알약 뱃지. 6개 값 공통 스타일(색으로 값을 구분하진 않음). */
+export const TypeBadge = styled.span`
+  flex-shrink: 0;
+  padding: ${theme.space.xs} ${theme.space.md};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  color: ${theme.color.primary700};
+  background: ${theme.color.primary50};
+  border-radius: ${theme.radius.full};
+`;
+
+/* 조리 방법 — 뱃지 옆 보조 텍스트 */
+export const MethodText = styled.span`
+  font-size: ${theme.fontSize.sm};
+  color: ${theme.color.sub};
+`;
+
+/* 주재료 한 줄 — "주재료 · 소고기" (없으면 "미입력") */
+export const MainMaterial = styled.p`
+  font-size: ${theme.fontSize.sm};
+  color: ${theme.color.gray700};
+`;
+
+/* ---------------- 영양성분 (Hero 아래 전체폭 스트립) ---------------- */
+
+export const NutritionStrip = styled.dl`
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: ${theme.space.md};
+  margin-bottom: ${theme.space["4xl"]};
+  padding: ${theme.space.xl};
+  background: ${theme.color.gray50};
+  border: 1px solid ${theme.color.gray100};
+  border-radius: ${theme.radius.md};
+`;
+
+export const NutritionItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.space.xs};
+  text-align: center;
+`;
+
+export const NutritionLabel = styled.dt`
+  font-size: ${theme.fontSize.xs};
+  color: ${theme.color.sub};
+`;
+
+export const NutritionValue = styled.dd`
+  font-size: ${theme.fontSize.md};
+  font-weight: ${theme.fontWeight.semibold};
+  color: ${theme.color.text};
+`;
+
+/* 값 뒤 단위(kcal/g/mg) — 작게, 옅게 */
+export const NutritionUnit = styled.span`
+  margin-left: 0.2rem;
+  font-size: ${theme.fontSize.xs};
+  font-weight: ${theme.fontWeight.regular};
+  color: ${theme.color.sub};
+`;
+
 export const AuthorAvatar = styled.span`
   width: ${theme.space.xl};
   height: ${theme.space.xl};
