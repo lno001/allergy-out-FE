@@ -17,9 +17,7 @@ import {
   ChartBlock,
   ChartSvg,
   ChartTitle,
-  CommandBox,
   DeviceBadge,
-  DeviceNo,
   EmptyNote,
   RegisterRow,
   StatCard,
@@ -131,13 +129,6 @@ function RaspSection() {
           </RegisterRow>
         ) : (
           <>
-            <RegisterRow>
-              <DeviceBadge>
-                내 디바이스 번호 <DeviceNo>{deviceNo}</DeviceNo>
-              </DeviceBadge>
-            </RegisterRow>
-            <CommandBox>./step_sender {deviceNo}</CommandBox>
-
             {stepsError && <Alert variant="danger">{stepsError}</Alert>}
 
             {isStepsLoading ? (

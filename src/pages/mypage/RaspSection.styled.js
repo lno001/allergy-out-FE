@@ -26,21 +26,6 @@ export const DeviceBadge = styled.span`
   color: ${theme.color.sub};
 `;
 
-export const DeviceNo = styled.span`
-  font-weight: ${theme.fontWeight.bold};
-  color: ${theme.color.text};
-`;
-
-export const CommandBox = styled.code`
-  display: block;
-  padding: ${theme.space.md} ${theme.space.lg};
-  background-color: ${theme.color.gray900};
-  color: ${theme.color.primary50};
-  border-radius: ${theme.radius.sm};
-  font-size: ${theme.fontSize.sm};
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-`;
-
 export const BodyInputRow = styled.div`
   display: flex;
   gap: ${theme.space.lg};
