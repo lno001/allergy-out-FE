@@ -34,6 +34,14 @@ const CHART_H = 140;
 const BASELINE_Y = 130;
 const TOP_Y = 10;
 
+/** 숫자 입력값을 0~max로 잘라낸 문자열로. 빈 값은 그대로 둔다(입력 중 지우기 허용) */
+function clampInput(rawValue, max) {
+  if (rawValue === "") return rawValue;
+  const num = Number(rawValue);
+  if (Number.isNaN(num)) return rawValue;
+  return String(Math.min(Math.max(num, 0), max));
+}
+
 /** points(오늘 누적 기록)를 꺾은선 + 아래 채움 영역 좌표로 변환. 0부터 시작한다고 보고 스케일링 */
 function buildLineChart(points) {
   if (points.length === 0) return null;
@@ -139,15 +147,23 @@ function RaspSection() {
                   <Input
                     label="키 (cm)"
                     type="number"
+                    min={0}
+                    max={300}
                     value={heightCm}
-                    onChange={(e) => setHeightCm(e.target.value)}
+                    onChange={(e) =>
+                      setHeightCm(clampInput(e.target.value, 300))
+                    }
                     placeholder="200"
                   />
                   <Input
                     label="몸무게 (kg)"
                     type="number"
+                    min={0}
+                    max={700}
                     value={weightKg}
-                    onChange={(e) => setWeightKg(e.target.value)}
+                    onChange={(e) =>
+                      setWeightKg(clampInput(e.target.value, 700))
+                    }
                     placeholder="70"
                   />
                   <StatCard>
