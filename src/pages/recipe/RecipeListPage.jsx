@@ -6,7 +6,7 @@ import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
 import { useAuth } from "../../hooks/useAuth";
-import { getRecipeList } from "../../apis/recipeApi";
+import { getRecipeList, getRecommendRecipes } from "../../apis/recipeApi";
 import {
   ALL_FILTER,
   COOKING_METHOD_TILES,
@@ -18,6 +18,7 @@ import {
   isBlankValue,
 } from "../../constants/recipe";
 import FilterModal from "./FilterModal";
+
 import {
   PageWrapper,
   RecommendSection,
@@ -157,51 +158,16 @@ const writeListState = (state) => {
 const recipeDetailPath = (recipeNo) => `/recipe/${recipeNo}`;
 
 /**
- * 오늘의 추천 레시피 — 예시 데이터(캐러셀, < > 로 넘김).
- * 백엔드에 추천 API + 주재료/소요시간/난이도 필드가 생기면 이 배열을 응답으로 교체한다.
- * 이미지는 임시로 loremflickr(lock 고정) 를 쓴다 — 실제 추천 레시피가 생기면 recipesImgPath 로 교체.
+ * 오늘의 추천 레시피
+ * 브라우저 로컬 년-월-일. 서버 시계가 아니라 사용자 PC/폰의 "오늘".
  */
-const FEATURED_RECIPES = [
-  {
-    recipeNo: null, // 실제 추천 레시피 번호가 생기면 채운다 → 그때 카드가 링크로 동작
-    recipeTitle: "두부 계란찜",
-    recipesImgPath:
-      "https://mblogthumb-phinf.pstatic.net/MjAyMzA2MDFfMTI5/MDAxNjg1NTgxOTMzNzgw.rQq17F2lFcBrUQ9nbzAI0Xh60SNQTHv3aEdbdTicpj8g.UQZnpk5KzlwAa3Q6lNbOvzRpYhRHBmAqnwNbbRoB3jkg.JPEG.jasmin7141/SE-ac51bee9-81ca-44bc-be73-755d95b07a81.jpg?type=w800",
-    memberName: "관리자",
-    createDate: "2026-09-03",
-    mainIngredient: "두부, 계란, 대파",
-    cookTime: "15분",
-    difficulty: "쉬움",
-    summary:
-      "부드럽고 촉촉한 계란찜에 두부를 더해 든든하게. 알레르기 걱정 없이 즐기는 기본 반찬.",
-  },
-  {
-    recipeNo: null,
-    recipeTitle: "애호박 된장찌개",
-    recipesImgPath:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJTvYgJlXycDn_WPTtajTPx1IU7A-sAvBX2Mm1fxvwdw&s=10",
-    memberName: "관리자",
-    createDate: "2026-09-02",
-    mainIngredient: "된장, 두부, 애호박",
-    cookTime: "20분",
-    difficulty: "보통",
-    summary:
-      "구수한 된장에 애호박과 두부를 넣고 팔팔 끓인 한 그릇. 밥 한 공기 뚝딱.",
-  },
-  {
-    recipeNo: null,
-    recipeTitle: "소고기 미역국",
-    recipesImgPath:
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT9v-N3rKiS6Byto3xXNFTpnXCAD5R3E78uI_PADhsQzg&s=10",
-    memberName: "관리자",
-    createDate: "2026-09-01",
-    mainIngredient: "소고기, 미역, 국간장",
-    cookTime: "30분",
-    difficulty: "보통",
-    summary:
-      "푹 우려낸 소고기 육수에 미역을 넉넉히. 생일상에도, 평범한 아침에도 좋은 국.",
-  },
-];
+const getLocalDate = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
 
 /**
  * 버튼 앞에 붙는 작은 아이콘들 — 라이브러리 없이 인라인 SVG.
@@ -305,6 +271,7 @@ function RecipeListPage() {
     restored?.excludeMyAllergy ?? true,
   ); // 회원 본인 알러지 재료가 든 레시피 숨김 여부 (기본 켜짐 = 백엔드 기본 동작)
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [featuredRecipes, setFeaturedRecipes] = useState([]);
   const [featuredIndex, setFeaturedIndex] = useState(0); // 추천 캐러셀 현재 위치
   const [recipes, setRecipes] = useState(/** @type {RecipeListItem[]} */ ([]));
   const [totalPages, setTotalPages] = useState(1);
@@ -350,6 +317,26 @@ function RecipeListPage() {
       const data = res?.data ?? { recipes: [], pageInfo: { totalPages: 1 } };
       setRecipes(data.recipes ?? []);
       setTotalPages(data.pageInfo?.totalPages ?? 1);
+      const recommendParams = { date: getLocalDate() };
+      if (trimmed) recommendParams.keyword = trimmed;
+      if (targetExcludes.length)
+        recommendParams.excludeMaterials = targetExcludes.join(",");
+      if (targetRecipeType && targetRecipeType !== ALL_FILTER)
+        recommendParams.recipeType = targetRecipeType;
+      if (targetCookingMethod && targetCookingMethod !== ALL_FILTER)
+        recommendParams.cookingMethod = targetCookingMethod;
+      if (targetExcludeMyAllergy === false)
+        recommendParams.applyMyAllergy = "false";
+
+      try {
+        const recRes = await getRecommendRecipes(recommendParams);
+        if (requestId !== requestIdRef.current) return;
+        setFeaturedRecipes(recRes?.data?.recipes ?? []);
+        setFeaturedIndex(0);
+      } catch {
+        if (requestId !== requestIdRef.current) return;
+        setFeaturedRecipes([]);
+      }
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
       setError(err?.msg ?? "레시피 목록을 불러오지 못했습니다.");
@@ -447,97 +434,112 @@ function RecipeListPage() {
   };
 
   // 추천 캐러셀 넘기기 (양끝에서 순환)
-  const moveFeatured = (step) =>
-    setFeaturedIndex(
-      (i) => (i + step + FEATURED_RECIPES.length) % FEATURED_RECIPES.length,
-    );
-  const featured = FEATURED_RECIPES[featuredIndex];
+  const featuredCount = featuredRecipes.length;
+  const featured = featuredRecipes[featuredIndex];
+
+  const moveFeatured = (step) => {
+    if (featuredCount === 0) return;
+    setFeaturedIndex((i) => (i + step + featuredCount) % featuredCount);
+  };
 
   // 5초마다 자동으로 다음 추천으로. featuredIndex 가 바뀔 때마다 타이머를 다시 걸어서
   // 사용자가 화살표/닷으로 수동으로 넘겨도 카운트다운이 리셋된다.
   useEffect(() => {
-    if (FEATURED_RECIPES.length <= 1) return;
+    if (featuredCount <= 1) return;
     const timerId = setTimeout(() => moveFeatured(1), 5000);
     return () => clearTimeout(timerId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [featuredIndex]);
+  }, [featuredIndex, featuredCount]);
 
   return (
     <PageWrapper className="container">
       {/* ---------- 오늘의 추천 레시피 (예시 데이터 캐러셀) ---------- */}
-      <RecommendSection>
-        <FeaturedCarousel>
-          <CarouselArrow
-            type="button"
-            aria-label="이전 추천"
-            $side="left"
-            onClick={() => moveFeatured(-1)}
-          >
-            <ChevronIcon dir="prev" />
-          </CarouselArrow>
-
-          <FeaturedCard>
-            <FeaturedThumb>
-              {featured.recipesImgPath ? (
-                <img
-                  src={featured.recipesImgPath}
-                  alt={featured.recipeTitle}
-                  onError={(e) => {
-                    e.currentTarget.style.visibility = "hidden";
-                  }}
-                />
-              ) : (
-                <FeaturedThumbFallback aria-hidden="true">
-                  🍳
-                </FeaturedThumbFallback>
-              )}
-            </FeaturedThumb>
-            <FeaturedBody>
-              <FeaturedEyebrow>오늘의 추천 레시피</FeaturedEyebrow>
-              <FeaturedTitle>{featured.recipeTitle}</FeaturedTitle>
-
-              <FeaturedSpecRow>
-                <FeaturedSpec>⏱ {featured.cookTime}</FeaturedSpec>
-                <CardDifficulty $level={featured.difficulty}>
-                  난이도 {featured.difficulty}
-                </CardDifficulty>
-              </FeaturedSpecRow>
-
-              <FeaturedSummary>{featured.summary}</FeaturedSummary>
-              <FeaturedIngredient>
-                주재료 · {featured.mainIngredient}
-              </FeaturedIngredient>
-
-              <FeaturedMeta>
-                <span>{featured.memberName}</span>
-                <span>{featured.createDate}</span>
-              </FeaturedMeta>
-            </FeaturedBody>
-          </FeaturedCard>
-
-          <CarouselArrow
-            type="button"
-            aria-label="다음 추천"
-            $side="right"
-            onClick={() => moveFeatured(1)}
-          >
-            <ChevronIcon dir="next" />
-          </CarouselArrow>
-        </FeaturedCarousel>
-
-        <CarouselDots>
-          {FEATURED_RECIPES.map((r, i) => (
-            <CarouselDot
-              key={r.recipeTitle}
+      {featured && (
+        <RecommendSection>
+          <FeaturedCarousel>
+            <CarouselArrow
               type="button"
-              $active={i === featuredIndex}
-              aria-label={`추천 ${i + 1}번으로`}
-              aria-current={i === featuredIndex}
-              onClick={() => setFeaturedIndex(i)}
-            />
-          ))}
-        </CarouselDots>
-      </RecommendSection>
+              aria-label="이전 추천"
+              $side="left"
+              onClick={() => moveFeatured(-1)}
+            >
+              <ChevronIcon dir="prev" />
+            </CarouselArrow>
+
+            <FeaturedCard as={Link} to={recipeDetailPath(featured.recipeNo)}>
+              <FeaturedThumb>
+                {featured.recipesImgPath ? (
+                  <img
+                    src={featured.recipesImgPath}
+                    alt={featured.recipeTitle}
+                    onError={(e) => {
+                      e.currentTarget.style.visibility = "hidden";
+                    }}
+                  />
+                ) : (
+                  <FeaturedThumbFallback aria-hidden="true">
+                    🍳
+                  </FeaturedThumbFallback>
+                )}
+              </FeaturedThumb>
+              <FeaturedBody>
+                <FeaturedEyebrow>오늘의 추천 레시피</FeaturedEyebrow>
+                <FeaturedTitle>{featured.recipeTitle}</FeaturedTitle>
+
+                {(featured.recipeType || featured.cookingMethod) && (
+                  <FeaturedSpecRow>
+                    {featured.recipeType && (
+                      <CardTypeBadge>{featured.recipeType}</CardTypeBadge>
+                    )}
+                    {featured.cookingMethod && (
+                      <FeaturedSpec>{featured.cookingMethod}</FeaturedSpec>
+                    )}
+                  </FeaturedSpecRow>
+                )}
+
+                <FeaturedIngredient>
+                  {isBlankValue(featured.calorie)
+                    ? EMPTY_TEXT
+                    : formatMeasure(featured.calorie, "kcal")}
+                </FeaturedIngredient>
+                <FeaturedIngredient>
+                  주재료 ·{" "}
+                  {isBlankValue(featured.mainMaterial)
+                    ? EMPTY_TEXT
+                    : featured.mainMaterial}
+                </FeaturedIngredient>
+
+                <FeaturedMeta>
+                  <span>{featured.memberName}</span>
+                  <span>{featured.createDate}</span>
+                </FeaturedMeta>
+              </FeaturedBody>
+            </FeaturedCard>
+
+            <CarouselArrow
+              type="button"
+              aria-label="다음 추천"
+              $side="right"
+              onClick={() => moveFeatured(1)}
+            >
+              <ChevronIcon dir="next" />
+            </CarouselArrow>
+          </FeaturedCarousel>
+
+          <CarouselDots>
+            {featuredRecipes.map((r, i) => (
+              <CarouselDot
+                key={r.recipeNo}
+                type="button"
+                $active={i === featuredIndex}
+                aria-label={`추천 ${i + 1}번으로`}
+                aria-current={i === featuredIndex}
+                onClick={() => setFeaturedIndex(i)}
+              />
+            ))}
+          </CarouselDots>
+        </RecommendSection>
+      )}
 
       {/* ---------- 툴바 ---------- */}
       <Toolbar>
