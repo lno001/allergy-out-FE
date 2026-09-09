@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { key: "allergy", label: "알러지 필터 관리", to: "/mypage/allergy", icon: "🛡️" },
   { key: "bookmark", label: "즐겨찾는 레시피", to: "/mypage/bookmark", icon: "❤️" },
   { key: "recipes", label: "내 작성 레시피", to: "/mypage/recipes", icon: "📝" },
+  { key: "calorie", label: "소모 칼로리 측정", to: "/mypage/calorie", icon: "🔥" },
 ];
 
 /**

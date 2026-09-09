@@ -8,6 +8,7 @@ import Preview from "./preview";
 import AllergyManagePage from "./pages/mypage/allergy/AllergyManagePage";
 import BookmarkListPage from "./pages/mypage/BookmarkListPage";
 import MyRecipesPage from "./pages/mypage/MyRecipesPage";
+import CaloriePage from "./pages/mypage/CaloriePage";
 import MyPage from "./pages/mypage/MyPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import RecipeCreatePage from "./pages/recipe/RecipeCreatePage";
@@ -32,6 +33,7 @@ function App() {
           <Route path="allergy" element={<AllergyManagePage />} />
           <Route path="bookmark" element={<BookmarkListPage />} />
           <Route path="recipes" element={<MyRecipesPage />} />
+          <Route path="calorie" element={<CaloriePage />} />
         </Route>
         <Route path="*" element={<HomePage />} />
       </Route>
