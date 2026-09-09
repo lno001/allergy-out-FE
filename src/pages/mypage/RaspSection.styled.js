@@ -85,6 +85,23 @@ export const ChartSvg = styled.svg`
   display: block;
 `;
 
+export const ChartSvgWrap = styled.div`
+  position: relative;
+`;
+
+export const ChartTooltip = styled.div`
+  position: absolute;
+  transform: translate(-50%, -130%);
+  padding: ${theme.space.xs} ${theme.space.sm};
+  background-color: ${theme.color.gray900};
+  color: ${theme.color.white};
+  font-size: ${theme.fontSize.xs};
+  font-weight: ${theme.fontWeight.semibold};
+  border-radius: ${theme.radius.sm};
+  white-space: nowrap;
+  pointer-events: none;
+`;
+
 export const AxisRow = styled.div`
   display: flex;
   justify-content: space-between;
