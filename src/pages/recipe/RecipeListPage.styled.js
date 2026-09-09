@@ -325,81 +325,31 @@ export const AllergyKnob = styled.span`
   transition: left ${theme.transition.base}, background ${theme.transition.base};
 `;
 
-/* 카테고리(왼쪽) + 구분선 + 프리셋(오른쪽) 을 한 줄에 놓는 래퍼 */
+/* 요리종류 축(왼쪽) + 구분선 + 조리방법 축(오른쪽) 을 한 줄에 놓는 래퍼.
+   두 축 모두 단일 선택. 좁으면 각 바가 가로 스크롤된다(스크롤바는 숨김). */
 export const CategoryRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${theme.space.xl};
+  gap: ${theme.space.md};
 `;
 
-/* 후식 ↔ 프리셋 세로 구분선 — 타일 이모지 높이(6.4rem)에 맞춤 */
+/* 요리종류 ↔ 조리방법 세로 구분선 — 타일 한 칸(이모지+라벨) 높이에 꽉 맞춘다 */
 export const RowDivider = styled.span`
   flex-shrink: 0;
-  align-self: center;
+  align-self: stretch;
   width: 1px;
-  height: 6.4rem;
   background: ${theme.color.gray200};
 `;
 
-/* 빠른 프리셋 — 이모지 타일 4개, 무조건 한 줄 (안 접힘). 공간 부족하면 카테고리 쪽이 스크롤됨 */
-export const PresetGroup = styled.div`
-  display: flex;
-  flex-wrap: nowrap;
-  flex-shrink: 0;
-  align-items: center;
-  gap: ${theme.space.lg};
-  margin-left: auto;
-`;
-
-/* 카테고리 타일과 완전히 같은 모양·크기 */
-export const PresetTile = styled.button`
-  display: flex;
-  flex-shrink: 0;
-  flex-direction: column;
-  align-items: center;
-  gap: ${theme.space.sm};
-  padding: ${theme.space.xs};
-`;
-
-export const PresetThumb = styled.span`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 6.4rem;
-  height: 6.4rem;
-  font-size: 2.8rem;
-  line-height: 1;
-  border-radius: ${theme.radius.sm};
-  background: ${theme.color.bgSoft};
-  border: 2px solid transparent;
-  transition: border-color ${theme.transition.fast}, transform ${theme.transition.fast};
-
-  ${PresetTile}[aria-pressed="true"] & {
-    border-color: ${theme.color.primary};
-  }
-
-  ${PresetTile}:hover & {
-    transform: translateY(-2px);
-  }
-`;
-
-export const PresetLabel = styled.span`
-  font-size: ${theme.fontSize.sm};
-  font-weight: ${theme.fontWeight.medium};
-  color: ${theme.color.sub};
-
-  ${PresetTile}[aria-pressed="true"] & {
-    color: ${theme.color.primary};
-    font-weight: ${theme.fontWeight.semibold};
-  }
-`;
-
-/* 카테고리 줄 — 왼쪽부터 쭉. 좁으면 스크롤은 되지만 스크롤바는 안 보이게 숨긴다 */
+/* 한 축(요리종류 또는 조리방법)의 타일 줄.
+   1200px 기준으로 타일을 좌우 끝까지 균등 분배(space-between)해 가운데 빈 공간이 안 생기게 한다.
+   space-between + gap(최소 간격) 조합. 화면이 좁아 넘치면 가로 스크롤(스크롤바는 숨김). */
 export const CategoryBar = styled.div`
   display: flex;
   flex: 1 1 0;
   min-width: 0;
-  gap: ${theme.space.lg};
+  gap: ${theme.space.sm};
+  justify-content: space-between;
   overflow-x: auto;
 
   scrollbar-width: none; /* Firefox */
@@ -414,18 +364,20 @@ export const CategoryCard = styled.button`
   flex-shrink: 0;
   flex-direction: column;
   align-items: center;
-  gap: ${theme.space.sm};
+  gap: ${theme.space.xs};
   padding: ${theme.space.xs};
 `;
 
-/* 예시 비주얼 — 지금은 이모지, 나중에 대표 이미지 썸네일로 교체 */
+/* 예시 비주얼 — 지금은 이모지, 나중에 대표 이미지 썸네일로 교체.
+   축 2개(요리종류·조리방법)를 한 줄에 넣으려고 타일을 조금 작게(5.6rem) 잡는다.
+   (space-between 로 균등 분배하므로 타일이 너무 작으면 사이 간격이 벌어져 안 예쁨) */
 export const CategoryThumb = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 6.4rem;
-  height: 6.4rem;
-  font-size: 2.8rem;
+  width: 5.6rem;
+  height: 5.6rem;
+  font-size: 2.4rem;
   line-height: 1;
   border-radius: ${theme.radius.sm};
   background: ${({ $active }) => theme.color.bgSoft};
@@ -442,7 +394,7 @@ export const CategoryThumb = styled.span`
 `;
 
 export const CategoryLabel = styled.span`
-  font-size: ${theme.fontSize.sm};
+  font-size: ${theme.fontSize.xs};
   font-weight: ${theme.fontWeight.medium};
   color: ${theme.color.text};
 
@@ -532,6 +484,7 @@ export const RecipeCard = styled(Link)`
 `;
 
 export const CardThumb = styled.div`
+  position: relative; /* 조회수 뱃지 오버레이 기준 */
   width: 100%;
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
@@ -575,23 +528,59 @@ export const CardTitle = styled.h3`
   overflow: hidden;
 `;
 
-/* 조리시간 · 난이도 (예시 데이터) */
+/* 조회수 — 썸네일 오른쪽 위 구석 오버레이 뱃지 */
+export const CardViewCount = styled.span`
+  position: absolute;
+  top: ${theme.space.sm};
+  right: ${theme.space.sm};
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem ${theme.space.sm};
+  font-size: ${theme.fontSize.xs};
+  color: ${theme.color.white};
+  background: ${theme.color.scrim};
+  border-radius: ${theme.radius.full};
+
+  svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+`;
+
+/* 요리종류(뱃지) + 조리방법(텍스트) 한 줄 */
 export const CardSpecRow = styled.div`
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: ${theme.space.xs};
   margin-top: ${theme.space.xs};
 `;
 
-export const CardSpec = styled.span`
+/* 요리 종류 — 알약 뱃지 (6값 공통 1색) */
+export const CardTypeBadge = styled.span`
+  flex-shrink: 0;
   padding: 0.2rem ${theme.space.sm};
   font-size: ${theme.fontSize.xs};
-  color: ${theme.color.sub};
-  background: ${theme.color.bgSoft};
-  border-radius: ${theme.radius.sm};
+  font-weight: ${theme.fontWeight.medium};
+  color: ${theme.color.primary700};
+  background: ${theme.color.primary50};
+  border-radius: ${theme.radius.full};
 `;
 
-/* 난이도 — 쉬움/보통/어려움에 따라 색을 다르게 */
+/* 조리 방법 — 뱃지 옆 보조 텍스트 */
+export const CardMethod = styled.span`
+  font-size: ${theme.fontSize.xs};
+  color: ${theme.color.sub};
+`;
+
+/* 칼로리 한 줄 — "🔥 684 kcal" / 값 없으면 "미입력" */
+export const CardCalorie = styled.p`
+  font-size: ${theme.fontSize.xs};
+  color: ${theme.color.sub};
+`;
+
+/* 난이도 — 쉬움/보통/어려움에 따라 색을 다르게 (오늘의 추천 카드에서만 사용) */
 const DIFFICULTY_COLORS = {
   쉬움: { fg: theme.color.primary700, bg: theme.color.primary50 },
   보통: { fg: theme.color.caution600, bg: theme.color.caution50 },
@@ -609,7 +598,7 @@ export const CardDifficulty = styled.span`
     (DIFFICULTY_COLORS[$level] ?? DIFFICULTY_COLORS.보통).bg};
 `;
 
-/* 주재료 (예시 데이터) — 한 줄, 넘치면 말줄임 */
+/* 주재료 (mainMaterial 1개) — 한 줄, 넘치면 말줄임. 없으면 "미입력" */
 export const CardMainIngredient = styled.p`
   font-size: ${theme.fontSize.xs};
   color: ${theme.color.sub};

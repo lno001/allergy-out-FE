@@ -16,6 +16,44 @@ export const COOKING_METHODS = ["굽기", "튀기기", "볶기", "찌기", "끓�
 export const RECIPE_TYPES = ["밥", "국&찌개", "반찬", "일품", "후식", "기타"];
 
 /**
+ * 목록 필터 축에서 "미적용" 을 뜻하는 키. 이 값이면 해당 파라미터를 요청에서 뺀다.
+ * (요리종류·조리방법 두 축 모두 단일 선택, "전체" 를 다시 누르면 해제와 같음)
+ */
+export const ALL_FILTER = "전체";
+
+/**
+ * 목록 카테고리(요리종류) 필터 타일 — "전체" + RECIPE_TYPES.
+ * emoji 는 자리표시용(나중에 대표 썸네일로 교체). key = 그대로 recipeType 파라미터로 나감.
+ */
+export const RECIPE_TYPE_TILES = [
+  { key: ALL_FILTER, emoji: "🍽️" },
+  { key: "밥", emoji: "🍚" },
+  { key: "국&찌개", emoji: "🍲" },
+  { key: "반찬", emoji: "🥗" },
+  { key: "일품", emoji: "🍛" },
+  { key: "후식", emoji: "🍰" },
+  { key: "기타", emoji: "🥡" },
+];
+
+/** 목록 조리방법 필터 타일 — "전체" + COOKING_METHODS. (요리종류 옆 두 번째 축) */
+export const COOKING_METHOD_TILES = [
+  { key: ALL_FILTER, emoji: "🍳" },
+  { key: "굽기", emoji: "🔥" },
+  { key: "튀기기", emoji: "🍤" },
+  { key: "볶기", emoji: "🥘" },
+  { key: "찌기", emoji: "♨️" },
+  { key: "끓이기", emoji: "🍲" },
+  { key: "기타", emoji: "🥄" },
+];
+
+/** 정렬 옵션 — 백엔드 GET /api/recipes 의 sort 파라미터 값. */
+export const SORT_OPTIONS = [
+  { key: "latest", label: "최신순" },
+  { key: "popular", label: "인기순" }, // viewCount 내림차순
+];
+export const DEFAULT_SORT = "latest";
+
+/**
  * 영양성분 5종 — 상세 표시 + 등록/수정 입력 공용.
  * key   : API JSON 필드명 (요청·응답 동일)
  * label : 화면 표기

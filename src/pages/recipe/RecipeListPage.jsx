@@ -6,7 +6,17 @@ import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
 import { useAuth } from "../../hooks/useAuth";
-import { getFilteredRecipes } from "../../apis/recipeApi";
+import { getRecipeList } from "../../apis/recipeApi";
+import {
+  ALL_FILTER,
+  COOKING_METHOD_TILES,
+  DEFAULT_SORT,
+  EMPTY_TEXT,
+  RECIPE_TYPE_TILES,
+  SORT_OPTIONS,
+  formatMeasure,
+  isBlankValue,
+} from "../../constants/recipe";
 import FilterModal from "./FilterModal";
 import {
   PageWrapper,
@@ -39,10 +49,6 @@ import {
   AllergyKnob,
   CategoryRow,
   RowDivider,
-  PresetGroup,
-  PresetTile,
-  PresetThumb,
-  PresetLabel,
   CategoryBar,
   CategoryCard,
   CategoryThumb,
@@ -54,10 +60,13 @@ import {
   RecipeGrid,
   RecipeCard,
   CardThumb,
+  CardViewCount,
   CardBody,
   CardTitle,
   CardSpecRow,
-  CardSpec,
+  CardTypeBadge,
+  CardMethod,
+  CardCalorie,
   CardDifficulty,
   CardMainIngredient,
   CardMeta,
@@ -70,22 +79,22 @@ import {
  * RecipeListPage  (route: /recipe — App.jsx <Route path="/recipe">)
  * -----------------------------------------------------------------------------
  * 회원·비회원이 레시피(조리법) 게시판에 들어왔을 때 목록을 보여주는 화면.
- * 조회는 GET /api/recipes/filter 하나로 통일 — 검색어(keyword) + 알레르기 제외
- * 필터(excludeMaterials) + 페이지네이션을 한 번에 받는다.
+ * 조회는 GET /api/recipes 하나로 통일(구 /api/recipes/filter 흡수) — 검색어(keyword),
+ * 제외 재료(excludeMaterials), 요리종류(recipeType), 조리방법(cookingMethod),
+ * 정렬(sort), 회원 알러지 on/off(applyMyAllergy) + 페이지네이션을 한 번에 받는다.
  *
- * 화면 구성 (1차 레이아웃):
- *  1) 오늘의 추천 레시피 — 큰 카드 1개. 백엔드 추천 API 전이라 예시 데이터 하드코딩.
+ * 화면 구성:
+ *  1) 오늘의 추천 레시피 — 큰 카드 1개. 백엔드 추천 API 전이라 예시 데이터 하드코딩(범위 밖).
  *  2) 툴바
- *     - 1행: [필터] [최신순/인기순] [카테고리 칩] ... [조리법 등록하기]
- *     - 2행: 가운데 정렬된 검색창 (검색 버튼 없이 엔터로 검색)
- *     - "인기순" · "카테고리" 는 백엔드 미지원. 인기순은 비활성, 카테고리는 배선만 완성(파라미터는 무시됨).
+ *     - 1행: [필터] [최신순/인기순] [알러지 토글(회원)] ... [검색창] [조리법 등록]
+ *     - 2행: 카테고리 2축 — 요리종류 타일 | 조리방법 타일 (둘 다 단일 선택)
  *  3) 카드 그리드 4열, 한 페이지 8개(PAGE_SIZE).
  *
  * - 인증: 회원이면 토큰이 자동 첨부되어 백엔드가 본인 알러지 재료를 뺀 목록을 준다.
- * - 검색: 검색창 + "검색" 버튼(또는 엔터). keyword 가 비면 파라미터를 빼서 전체 조회.
+ * - 검색: 검색창 엔터. keyword 가 비면 파라미터를 빼서 전체 조회.
  * - 필터: "필터" 버튼 → FilterModal 에서 제외할 재료명을 고르고 "적용하기".
  *   적용된 개수는 "필터 (N)" 로만 표시하고, 변경은 모달을 다시 열어서 한다.
- * - 조회는 submit·페이지 이동·필터/카테고리/프리셋/알러지토글 변경 시점에 loadRecipes({...}) 직접 호출.
+ * - 조회는 submit·페이지 이동·요리종류/조리방법/정렬/알러지토글 변경 시점에 loadRecipes({...}) 직접 호출.
  * - 상세 → 뒤로가기(브라우저 back)로 돌아오면 보던 페이지·검색어·필터를 그대로 복원한다
  *   (sessionStorage + useNavigationType. 헤더 링크로 새로 들어오면 복원 안 함).
  * - 헤더/푸터는 components/layout 담당. props 없음.
@@ -99,11 +108,16 @@ import {
  * @property {string} recipesImgPath   대표 이미지 S3 URL ← <img src>
  * @property {string} memberName      작성자 이름
  * @property {string} createDate      "YYYY-MM-DD"
+ * @property {string} recipeType      요리 종류 (밥/국&찌개/… — NOT NULL)
+ * @property {string} cookingMethod   조리 방법 (굽기/튀기기/… — NOT NULL)
+ * @property {(number|null)} calorie   칼로리(kcal). 단위는 프론트가 붙임
+ * @property {(string|null)} mainMaterial  메인 재료 1개
+ * @property {number} viewCount       조회수
  */
 
 /**
  * @typedef {Object} RecipeListResponse
- * GET /api/recipes/filter 성공 응답의 data
+ * GET /api/recipes 성공 응답의 data (구 /filter 흡수)
  * @property {RecipeListItem[]} recipes
  * @property {{ page:number, size:number, offset:number, totalElements:number, totalPages:number }} pageInfo
  */
@@ -112,8 +126,9 @@ const PAGE_SIZE = 8; // 4열 × 2행
 const RECIPE_FORM_PATH = "/recipe/form"; // 조리법 등록 화면
 
 /**
- * 목록 화면 상태(페이지·검색어·필터·카테고리·프리셋)를 sessionStorage 에 저장/복원.
- * 상세 → 뒤로가기(브라우저 back) 로 돌아왔을 때 보던 페이지 그대로 복원하기 위함.
+ * 목록 화면 상태(페이지·검색어·제외재료·요리종류·조리방법·정렬·알러지토글)를
+ * sessionStorage 에 저장/복원. 상세 → 뒤로가기(브라우저 back) 로 돌아왔을 때 보던
+ * 페이지 그대로 복원하기 위함.
  * (헤더의 "레시피 조회" 로 새로 들어오면 복원하지 않는다 — useNavigationType 으로 구분)
  */
 const LIST_STATE_KEY = "recipeList:lastView";
@@ -134,52 +149,9 @@ const writeListState = (state) => {
   }
 };
 
-/**
- * 레시피 카테고리 — 1차 예시(틀만).
- * 텍스트를 읽기 전에 "아 이런 종류구나" 하고 눈에 들어오게 각 카테고리에 예시 비주얼을 붙인다.
- * 지금은 이모지로 자리만 잡고, 나중에 대표 이미지(썸네일)로 교체한다.
- * 백엔드에 카테고리 컬럼 + /filter 의 category 파라미터가 생기면 key 기준을 맞춘다.
- * "전체" 는 카테고리 미적용(파라미터 생략).
- */
-const RECIPE_CATEGORIES = [
-  { key: "전체", emoji: "🍽️" },
-  { key: "밥", emoji: "🍚" },
-  { key: "국·찌개", emoji: "🍲" },
-  { key: "반찬", emoji: "🥗" },
-  { key: "고기", emoji: "🥩" },
-  { key: "면", emoji: "🍜" },
-  { key: "채소", emoji: "🥬" },
-  { key: "해산물", emoji: "🦐" },
-  { key: "후식", emoji: "🍰" },
-];
-const ALL_CATEGORY = RECIPE_CATEGORIES[0].key;
-
-/**
- * 빠른 필터 프리셋 — 원클릭으로 켜고 끄는 조건 (여러 개 동시 가능).
- * 백엔드 /filter 에 해당 조건 파라미터가 없어서 지금은 UI + 배선만.
- * key 가 그대로 params.presets 로 나가고, 백엔드가 처리하게 되면 바로 동작한다.
- */
-const RECIPE_PRESETS = [
-  { key: "quick", emoji: "⚡", label: "초스피드" }, // 조리시간 ≤ 10분
-  { key: "fewIngredients", emoji: "🥕", label: "간단재료" }, // 재료 ≤ 3개
-  { key: "beginner", emoji: "🔰", label: "초보환영" }, // 난이도 = 쉬움
-  { key: "popular", emoji: "🔥", label: "주간인기" }, // 최근 7일 인기
-];
-
-/**
- * 카드에 보여줄 조리시간/난이도/주재료 — 예시 데이터.
- * 목록 응답엔 이 필드가 없어서, 백엔드에 컬럼이 생길 때까지 recipeNo 로 안정적으로 하나 골라 쓴다.
- * (recipeNo 로 고르니 리렌더해도 값이 안 바뀜)
- */
-const EXAMPLE_CARD_INFO = [
-  { cookTime: "15분", difficulty: "쉬움", mainIngredient: "두부, 계란" },
-  { cookTime: "30분", difficulty: "보통", mainIngredient: "돼지고기, 김치" },
-  { cookTime: "45분", difficulty: "어려움", mainIngredient: "소고기, 무" },
-  { cookTime: "10분", difficulty: "쉬움", mainIngredient: "양배추, 당근" },
-  { cookTime: "25분", difficulty: "보통", mainIngredient: "닭고기, 감자" },
-];
-const exampleCardInfo = (recipeNo) =>
-  EXAMPLE_CARD_INFO[Math.abs(Number(recipeNo) || 0) % EXAMPLE_CARD_INFO.length];
+/* 카테고리(요리종류)·조리방법 필터 타일, 정렬 옵션은 constants/recipe.js 로 이동:
+   RECIPE_TYPE_TILES / COOKING_METHOD_TILES / SORT_OPTIONS / ALL_FILTER / DEFAULT_SORT.
+   카드의 조리시간·난이도는 백엔드에 컬럼이 없어 폐기(예시 데이터 제거). */
 
 /** 레시피 상세 경로 — App.jsx 의 <Route path="/recipe/:recipeNo"> 와 맞춰야 함 */
 const recipeDetailPath = (recipeNo) => `/recipe/${recipeNo}`;
@@ -285,6 +257,16 @@ function SearchIcon() {
   );
 }
 
+/** 눈 아이콘 — 카드 조회수 뱃지 */
+function EyeIcon() {
+  return (
+    <svg {...iconProps} width="12" height="12">
+      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 /** 좌/우 화살표 — 추천 캐러셀 넘기기 (dir: "prev" | "next") */
 function ChevronIcon({ dir }) {
   return (
@@ -312,11 +294,13 @@ function RecipeListPage() {
   const [excludeMaterials, setExcludeMaterials] = useState(
     /** @type {string[]} */ (restored?.excludeMaterials ?? []),
   ); // 필터 모달에서 "적용" 한 제외 재료명
-  const [sortBy] = useState("latest"); // "latest" | "popular" — 인기순은 백엔드 미지원이라 아직 setter 없음
-  const [category, setCategory] = useState(restored?.category ?? ALL_CATEGORY); // 선택된 카테고리 ("전체" = 미적용)
-  const [presets, setPresets] = useState(
-    /** @type {string[]} */ (restored?.presets ?? []),
-  ); // 켜진 빠른 프리셋 key 들
+  const [recipeType, setRecipeType] = useState(
+    restored?.recipeType ?? ALL_FILTER,
+  ); // 요리종류 필터 ("전체" = 미적용). 단일 선택
+  const [cookingMethod, setCookingMethod] = useState(
+    restored?.cookingMethod ?? ALL_FILTER,
+  ); // 조리방법 필터 ("전체" = 미적용). 단일 선택
+  const [sortBy, setSortBy] = useState(restored?.sortBy ?? DEFAULT_SORT); // "latest" | "popular"
   const [excludeMyAllergy, setExcludeMyAllergy] = useState(
     restored?.excludeMyAllergy ?? true,
   ); // 회원 본인 알러지 재료가 든 레시피 숨김 여부 (기본 켜짐 = 백엔드 기본 동작)
@@ -331,15 +315,17 @@ function RecipeListPage() {
   const requestIdRef = useRef(0);
 
   /**
-   * 레시피 목록 조회. page(1부터)·keyword·excludeMaterials 를 인자로 직접 받아 호출한다.
-   * (조회 시점 값을 그대로 넘겨 "state 변경 → 리렌더 → useEffect" 사이클을 안 탄다.)
+   * 레시피 목록 조회 — 조회 시점의 값들을 인자로 직접 받아 호출한다
+   * (state 변경 → 리렌더 → useEffect 사이클을 안 타려고).
+   * "전체"·기본 정렬은 파라미터에서 빼고, 늦게 온 응답은 requestId 로 버린다.
    */
   const loadRecipes = async ({
     page: targetPage = 1,
     keyword: targetKeyword = "",
     excludeMaterials: targetExcludes = [],
-    category: targetCategory = ALL_CATEGORY,
-    presets: targetPresets = [],
+    recipeType: targetRecipeType = ALL_FILTER,
+    cookingMethod: targetCookingMethod = ALL_FILTER,
+    sortBy: targetSort = DEFAULT_SORT,
     excludeMyAllergy: targetExcludeMyAllergy = true,
   } = {}) => {
     const requestId = ++requestIdRef.current;
@@ -351,13 +337,14 @@ function RecipeListPage() {
       if (trimmed) params.keyword = trimmed;
       if (targetExcludes.length)
         params.excludeMaterials = targetExcludes.join(","); // 콤마 1개로 이어 보냄
-      if (targetCategory && targetCategory !== ALL_CATEGORY)
-        params.category = targetCategory; // 백엔드에 category 파라미터 생기면 그대로 동작 (현재는 무시됨)
-      if (targetPresets?.length) params.presets = targetPresets.join(","); // 빠른 프리셋 — 백엔드 지원 시 동작
-      if (targetExcludeMyAllergy === false) params.applyMyAllergy = "false"; // 회원 알러지 자동 제외 끄기 — 백엔드 지원 시 동작 (기본은 켜짐 = 파라미터 생략)
-      // TODO(백엔드): sort 파라미터 생기면 params.sort = sortBy 연결 (지금은 최신순 고정)
+      if (targetRecipeType && targetRecipeType !== ALL_FILTER)
+        params.recipeType = targetRecipeType; // 한글/`&` 는 axios 가 인코딩
+      if (targetCookingMethod && targetCookingMethod !== ALL_FILTER)
+        params.cookingMethod = targetCookingMethod;
+      if (targetSort && targetSort !== DEFAULT_SORT) params.sort = targetSort;
+      if (targetExcludeMyAllergy === false) params.applyMyAllergy = "false"; // 기본(켜짐)은 파라미터 생략
 
-      const res = await getFilteredRecipes(params);
+      const res = await getRecipeList(params);
       if (requestId !== requestIdRef.current) return; // 더 최근 요청이 있으면 버림
       /** @type {RecipeListResponse} */
       const data = res?.data ?? { recipes: [], pageInfo: { totalPages: 1 } };
@@ -371,18 +358,19 @@ function RecipeListPage() {
     }
   };
 
-  // 최초 진입 시 1페이지 조회. auth 부트스트랩(refresh 로 access token 재발급) 완료 후에
-  // 호출해야 요청에 토큰이 붙어 백엔드가 "그 회원의 알러지 재료를 뺀" 목록을 준다.
-  // (/filter 는 인증 선택이라 토큰 없이 보내면 401 이 아니라 게스트 목록 200 이 와서 재시도도 안 걸림)
-  // 지금 조회에 쓰는 검색/필터 상태를 한 묶음으로 (loadRecipes 에 그대로 펼쳐 넘긴다)
+  // 지금 조회에 쓰는 검색/필터/정렬 상태 한 묶음 (loadRecipes 에 그대로 펼쳐 넘긴다)
   const queryState = {
     keyword,
     excludeMaterials,
-    category,
-    presets,
+    recipeType,
+    cookingMethod,
+    sortBy,
     excludeMyAllergy,
   };
 
+  // 최초 진입 시 조회. auth 부트스트랩(refresh 로 access token 재발급) 완료 후에 호출해야
+  // 요청에 토큰이 붙어 백엔드가 "그 회원의 알러지 재료를 뺀" 목록을 준다.
+  // (인증 선택 엔드포인트라 토큰 없이 보내면 401 이 아니라 게스트 목록 200 → 재시도도 안 걸림)
   useEffect(() => {
     if (!isReady) return;
     // 복원된 값(뒤로가기) 또는 기본값으로 최초 조회
@@ -393,7 +381,15 @@ function RecipeListPage() {
   // 현재 화면 상태를 sessionStorage 에 저장 — 상세 갔다가 뒤로가기로 돌아오면 이걸로 복원
   useEffect(() => {
     writeListState({ page, ...queryState });
-  }, [page, keyword, excludeMaterials, category, presets, excludeMyAllergy]);
+  }, [
+    page,
+    keyword,
+    excludeMaterials,
+    recipeType,
+    cookingMethod,
+    sortBy,
+    excludeMyAllergy,
+  ]);
 
   // 인풋에서 엔터(form submit) → 1페이지부터 현재 입력값 + 적용된 필터로 조회
   const handleSearchSubmit = (event) => {
@@ -416,21 +412,30 @@ function RecipeListPage() {
     loadRecipes({ page: 1, ...queryState, excludeMaterials: nextExcludes });
   };
 
-  // 카테고리 선택 → 1페이지부터 그 카테고리로 조회
-  const handleSelectCategory = (nextCategory) => {
-    setCategory(nextCategory);
+  // 요리종류 선택 → 1페이지부터 다시 조회. 켜진 칩을 다시 누르면 "전체"(해제)
+  const handleSelectRecipeType = (nextType) => {
+    const applied = nextType === recipeType ? ALL_FILTER : nextType;
+    if (applied === recipeType) return; // 이미 그 상태 (예: "전체"에서 "전체" 클릭)
+    setRecipeType(applied);
     setPage(1);
-    loadRecipes({ page: 1, ...queryState, category: nextCategory });
+    loadRecipes({ page: 1, ...queryState, recipeType: applied });
   };
 
-  // 빠른 프리셋 토글 (여러 개 동시 가능) → 1페이지부터 다시 조회
-  const handleTogglePreset = (key) => {
-    const nextPresets = presets.includes(key)
-      ? presets.filter((p) => p !== key)
-      : [...presets, key];
-    setPresets(nextPresets);
+  // 조리방법 선택 → 1페이지부터 다시 조회. 켜진 칩을 다시 누르면 "전체"(해제)
+  const handleSelectCookingMethod = (nextMethod) => {
+    const applied = nextMethod === cookingMethod ? ALL_FILTER : nextMethod;
+    if (applied === cookingMethod) return;
+    setCookingMethod(applied);
     setPage(1);
-    loadRecipes({ page: 1, ...queryState, presets: nextPresets });
+    loadRecipes({ page: 1, ...queryState, cookingMethod: applied });
+  };
+
+  // 정렬 변경 (최신순 ↔ 인기순) → 1페이지부터 다시 조회
+  const handleSelectSort = (nextSort) => {
+    if (nextSort === sortBy) return;
+    setSortBy(nextSort);
+    setPage(1);
+    loadRecipes({ page: 1, ...queryState, sortBy: nextSort });
   };
 
   // 내 알러지 재료 숨김 on/off → 1페이지부터 다시 조회 (회원만 노출되는 버튼)
@@ -546,20 +551,17 @@ function RecipeListPage() {
             </Button>
 
             <SortToggle role="group" aria-label="정렬 기준">
-              <SortOption
-                type="button"
-                $active={sortBy === "latest"}
-                aria-pressed={sortBy === "latest"}
-              >
-                최신순
-              </SortOption>
-              <SortOption
-                type="button"
-                disabled
-                title="인기순 정렬은 준비 중입니다"
-              >
-                인기순
-              </SortOption>
+              {SORT_OPTIONS.map(({ key, label }) => (
+                <SortOption
+                  key={key}
+                  type="button"
+                  $active={sortBy === key}
+                  aria-pressed={sortBy === key}
+                  onClick={() => handleSelectSort(key)}
+                >
+                  {label}
+                </SortOption>
+              ))}
             </SortToggle>
 
             {/* 회원 본인 알러지 자동 제외 on/off — 로그인 회원에게만 노출.
@@ -607,17 +609,17 @@ function RecipeListPage() {
           </ToolbarEnd>
         </ToolbarRow>
 
-        {/* 카테고리(왼쪽) + 빠른 프리셋(오른쪽, 카테고리 뒤 빈 공간을 채움) 한 줄 */}
+        {/* 카테고리 축 2개 — 왼쪽 요리종류 / 오른쪽 조리방법. 둘 다 단일 선택.
+            텍스트 전에 이모지로 종류가 눈에 들어오게 (나중에 대표 썸네일로 교체) */}
         <CategoryRow>
-          {/* 카테고리 — 텍스트 전에 비주얼로 종류가 보이게 (지금은 이모지, 나중에 대표 이미지) */}
-          <CategoryBar role="group" aria-label="카테고리">
-            {RECIPE_CATEGORIES.map(({ key, emoji }) => (
+          <CategoryBar role="group" aria-label="요리 종류">
+            {RECIPE_TYPE_TILES.map(({ key, emoji }) => (
               <CategoryCard
                 key={key}
                 type="button"
-                $active={key === category}
-                aria-pressed={key === category}
-                onClick={() => handleSelectCategory(key)}
+                $active={key === recipeType}
+                aria-pressed={key === recipeType}
+                onClick={() => handleSelectRecipeType(key)}
               >
                 <CategoryThumb aria-hidden="true">{emoji}</CategoryThumb>
                 <CategoryLabel>{key}</CategoryLabel>
@@ -625,25 +627,23 @@ function RecipeListPage() {
             ))}
           </CategoryBar>
 
-          {/* 후식 ↔ 프리셋 구분선 */}
+          {/* 요리종류 ↔ 조리방법 구분선 */}
           <RowDivider aria-hidden="true" />
 
-          {/* 빠른 프리셋 — 카테고리와 같은 이모지 타일. 원클릭 필터(여러 개 동시), 백엔드 지원 전이라 배선만 */}
-          <PresetGroup role="group" aria-label="빠른 필터">
-            {RECIPE_PRESETS.map(({ key, emoji, label }) => (
-              <PresetTile
+          <CategoryBar role="group" aria-label="조리 방법">
+            {COOKING_METHOD_TILES.map(({ key, emoji }) => (
+              <CategoryCard
                 key={key}
                 type="button"
-                aria-label={label}
-                $active={presets.includes(key)}
-                aria-pressed={presets.includes(key)}
-                onClick={() => handleTogglePreset(key)}
+                $active={key === cookingMethod}
+                aria-pressed={key === cookingMethod}
+                onClick={() => handleSelectCookingMethod(key)}
               >
-                <PresetThumb aria-hidden="true">{emoji}</PresetThumb>
-                <PresetLabel>{label}</PresetLabel>
-              </PresetTile>
+                <CategoryThumb aria-hidden="true">{emoji}</CategoryThumb>
+                <CategoryLabel>{key}</CategoryLabel>
+              </CategoryCard>
             ))}
-          </PresetGroup>
+          </CategoryBar>
         </CategoryRow>
       </Toolbar>
 
@@ -664,7 +664,6 @@ function RecipeListPage() {
           <>
             <RecipeGrid>
               {recipes.map((recipe) => {
-                const info = exampleCardInfo(recipe.recipeNo); // 예시 데이터 (조리시간·난이도·주재료)
                 return (
                   <li key={recipe.recipeNo}>
                     <RecipeCard to={recipeDetailPath(recipe.recipeNo)}>
@@ -677,19 +676,38 @@ function RecipeListPage() {
                             e.currentTarget.style.visibility = "hidden";
                           }}
                         />
+                        <CardViewCount>
+                          <EyeIcon />
+                          {Number(recipe.viewCount ?? 0).toLocaleString()}
+                        </CardViewCount>
                       </CardThumb>
                       <CardBody>
                         <CardTitle>{recipe.recipeTitle}</CardTitle>
 
-                        <CardSpecRow>
-                          <CardSpec>⏱ {info.cookTime}</CardSpec>
-                          <CardDifficulty $level={info.difficulty}>
-                            {info.difficulty}
-                          </CardDifficulty>
-                        </CardSpecRow>
+                        {/* 요리종류(뱃지) + 조리방법(텍스트) — 둘 다 NOT NULL,
+                            필드 미배포 응답 대비 방어적 렌더 */}
+                        {(recipe.recipeType || recipe.cookingMethod) && (
+                          <CardSpecRow>
+                            {recipe.recipeType && (
+                              <CardTypeBadge>{recipe.recipeType}</CardTypeBadge>
+                            )}
+                            {recipe.cookingMethod && (
+                              <CardMethod>{recipe.cookingMethod}</CardMethod>
+                            )}
+                          </CardSpecRow>
+                        )}
+
+                        <CardCalorie>
+                          {isBlankValue(recipe.calorie)
+                            ? EMPTY_TEXT
+                            : formatMeasure(recipe.calorie, "kcal")}
+                        </CardCalorie>
 
                         <CardMainIngredient>
-                          주재료 · {info.mainIngredient}
+                          주재료 ·{" "}
+                          {isBlankValue(recipe.mainMaterial)
+                            ? EMPTY_TEXT
+                            : recipe.mainMaterial}
                         </CardMainIngredient>
 
                         <CardMeta>

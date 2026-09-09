@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { getFilteredRecipes } from "../../apis/recipeApi";
+import { getRecipeList } from "../../apis/recipeApi";
 import bibimbapImg from "../../assets/home/bibimbap.jpg";
 import chickenImg from "../../assets/home/chicken.jpg";
 import saladImg from "../../assets/home/salad.jpg";
@@ -115,7 +115,7 @@ function HomePage() {
 
     const fetchAndShuffle = async () => {
       try {
-        const res = await getFilteredRecipes({ page: 0, size: RANDOM_POOL_SIZE });
+        const res = await getRecipeList({ page: 0, size: RANDOM_POOL_SIZE });
         const recipes = res?.data?.recipes ?? [];
         const withImage = recipes
           .filter((r) => r.recipesImgPath)
