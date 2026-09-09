@@ -2,6 +2,8 @@ import styled from "styled-components";
 
 import { theme } from "../../styles/theme";
 
+/* BookmarkListPage.styled.js 와 같은 마이페이지 리스트 셸. 탭마다 독립적으로 둔다. */
+
 export const CardWrap = styled.section`
   flex: 1;
   min-width: 0;
@@ -11,7 +13,6 @@ export const CardWrap = styled.section`
   overflow: hidden;
 `;
 
-/* ProfileEditPage 의 CardBanner 와 같은 초록 그라디언트 띠. 즐겨찾기 탭에선 내용 없이 장식만. */
 export const PageBanner = styled.div`
   height: ${theme.space["6xl"]};
   background: linear-gradient(90deg, ${theme.color.primaryHover}, ${theme.color.primary});

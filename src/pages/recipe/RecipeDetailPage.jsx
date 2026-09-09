@@ -6,6 +6,7 @@ import Loading from "../../components/common/Loading";
 import Modal from "../../components/common/Modal";
 import { ToastContext } from "../../components/common/ToastProvider";
 import { useAuth } from "../../hooks/useAuth";
+import useBookmarkToggle from "../../hooks/useBookmarkToggle";
 import { deleteRecipe, getRecipe } from "../../apis/recipeApi";
 import {
   EMPTY_TEXT,
@@ -20,6 +21,7 @@ import {
   HeroImage,
   HeroInfo,
   RecipeTitle,
+  BookmarkToggle,
   SpecRow,
   TypeBadge,
   MethodText,
@@ -75,7 +77,7 @@ import {
  * @property {string}  recipesImgPath    대표 이미지 S3 URL ← <img src>
  * @property {string}  memberName        작성자 이름
  * @property {string}  createDate        "YYYY-MM-DD"
- * @property {boolean} isBookmarked      현재 로그인 사용자의 즐겨찾기 여부 (현재 백엔드 false 고정)
+ * @property {boolean} isBookmarked      현재 로그인 사용자의 즐겨찾기 여부 (비로그인 false)
  * @property {string}  recipeType        요리 종류 (밥/국&찌개/반찬/일품/후식/기타 — NOT NULL)
  * @property {string}  cookingMethod     조리 방법 (굽기/튀기기/볶기/찌기/끓이기/기타 — NOT NULL)
  * @property {(number|null)} calorie       칼로리(kcal). 단위는 프론트가 붙임
@@ -139,6 +141,19 @@ function RecipeDetailPage() {
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // 즐겨찾기 토글 — data 로딩 전(또는 다른 레시피의 이전 응답이 남아있는 동안)엔
+  // initialBookmarked 를 undefined 로 넘겨, 현재 recipeNo 의 응답이 왔을 때만 seed 되게 한다.
+  const loadedRecipe =
+    String(data?.recipe?.recipeNo) === String(recipeNo) ? data.recipe : null;
+  const {
+    bookmarked,
+    pending: bookmarkPending,
+    toggle: toggleBookmark,
+  } = useBookmarkToggle({
+    recipeNo: Number(recipeNo),
+    initialBookmarked: loadedRecipe ? loadedRecipe.isBookmarked : undefined,
+  });
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -222,6 +237,16 @@ function RecipeDetailPage() {
 
         <HeroInfo>
           <RecipeTitle>{recipe.recipeTitle}</RecipeTitle>
+
+          <BookmarkToggle
+            type="button"
+            $on={bookmarked}
+            aria-pressed={bookmarked}
+            disabled={bookmarkPending}
+            onClick={toggleBookmark}
+          >
+            {bookmarked ? "❤️ 즐겨찾기됨" : "🤍 즐겨찾기"}
+          </BookmarkToggle>
 
           {/* 요리 종류(뱃지) + 조리 방법(텍스트) — 백엔드 계약상 둘 다 NOT NULL.
               (필드 배포 전 응답엔 없을 수 있어 방어적으로 렌더) */}

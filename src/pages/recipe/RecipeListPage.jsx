@@ -6,6 +6,8 @@ import Button from "../../components/common/Button";
 import Loading from "../../components/common/Loading";
 import Pagination from "../../components/common/Pagination";
 import { useAuth } from "../../hooks/useAuth";
+import RecipeCard from "../../components/recipe/RecipeCard";
+import { CardTypeBadge } from "../../components/recipe/RecipeCard.styled";
 import { getRecipeList, getRecommendRecipes } from "../../apis/recipeApi";
 import {
   ALL_FILTER,
@@ -59,18 +61,6 @@ import {
   SearchSubmit,
   ContentArea,
   RecipeGrid,
-  RecipeCard,
-  CardThumb,
-  CardViewCount,
-  CardBody,
-  CardTitle,
-  CardSpecRow,
-  CardTypeBadge,
-  CardMethod,
-  CardCalorie,
-  CardDifficulty,
-  CardMainIngredient,
-  CardMeta,
   EmptyState,
   EmptyText,
   PaginationWrap,
@@ -114,6 +104,7 @@ import {
  * @property {(number|null)} calorie   칼로리(kcal). 단위는 프론트가 붙임
  * @property {(string|null)} mainMaterial  메인 재료 1개
  * @property {number} viewCount       조회수
+ * @property {boolean} isBookmarked   로그인 사용자의 즐겨찾기 여부 (비로그인 false)
  */
 
 /**
@@ -219,16 +210,6 @@ function SearchIcon() {
     <svg {...iconProps}>
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
-
-/** 눈 아이콘 — 카드 조회수 뱃지 */
-function EyeIcon() {
-  return (
-    <svg {...iconProps} width="12" height="12">
-      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
-      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
@@ -665,62 +646,9 @@ function RecipeListPage() {
         ) : (
           <>
             <RecipeGrid>
-              {recipes.map((recipe) => {
-                return (
-                  <li key={recipe.recipeNo}>
-                    <RecipeCard to={recipeDetailPath(recipe.recipeNo)}>
-                      <CardThumb>
-                        <img
-                          src={recipe.recipesImgPath}
-                          alt={recipe.recipeTitle}
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.style.visibility = "hidden";
-                          }}
-                        />
-                        <CardViewCount>
-                          <EyeIcon />
-                          {Number(recipe.viewCount ?? 0).toLocaleString()}
-                        </CardViewCount>
-                      </CardThumb>
-                      <CardBody>
-                        <CardTitle>{recipe.recipeTitle}</CardTitle>
-
-                        {/* 요리종류(뱃지) + 조리방법(텍스트) — 둘 다 NOT NULL,
-                            필드 미배포 응답 대비 방어적 렌더 */}
-                        {(recipe.recipeType || recipe.cookingMethod) && (
-                          <CardSpecRow>
-                            {recipe.recipeType && (
-                              <CardTypeBadge>{recipe.recipeType}</CardTypeBadge>
-                            )}
-                            {recipe.cookingMethod && (
-                              <CardMethod>{recipe.cookingMethod}</CardMethod>
-                            )}
-                          </CardSpecRow>
-                        )}
-
-                        <CardCalorie>
-                          {isBlankValue(recipe.calorie)
-                            ? EMPTY_TEXT
-                            : formatMeasure(recipe.calorie, "kcal")}
-                        </CardCalorie>
-
-                        <CardMainIngredient>
-                          주재료 ·{" "}
-                          {isBlankValue(recipe.mainMaterial)
-                            ? EMPTY_TEXT
-                            : recipe.mainMaterial}
-                        </CardMainIngredient>
-
-                        <CardMeta>
-                          <span>{recipe.createDate}</span>
-                          <span>{recipe.memberName}</span>
-                        </CardMeta>
-                      </CardBody>
-                    </RecipeCard>
-                  </li>
-                );
-              })}
+              {recipes.map((recipe) => (
+                <RecipeCard key={recipe.recipeNo} recipe={recipe} />
+              ))}
             </RecipeGrid>
 
             <PaginationWrap>

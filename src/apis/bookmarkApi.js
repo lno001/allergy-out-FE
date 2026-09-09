@@ -7,12 +7,20 @@ import axiosInstance from "./axiosInstance";
 
 /**
  * @typedef {Object} BookmarkListItem
+ * 2026-09-09: 목록(GET /api/recipes)·내레시피(GET /api/recipes/me) 와 같은 카드 형태로 확장.
+ * 프론트는 공용 RecipeCard 로 렌더한다. isBookmarked 는 즐겨찾기 목록이라 항상 true.
  * @property {number} recipeNo
  * @property {string} recipeTitle
  * @property {string} recipeMainImg - 원본 파일명 (썸네일엔 안 씀)
  * @property {string} recipesImgPath - S3 URL (썸네일)
  * @property {string} memberName - 작성자
  * @property {string} createDate - 레시피 작성일 (yyyy-MM-dd)
+ * @property {string} recipeType
+ * @property {string} cookingMethod
+ * @property {(number|null)} calorie
+ * @property {(string|null)} mainMaterial
+ * @property {number} viewCount
+ * @property {boolean} isBookmarked - 항상 true
  *
  * @typedef {Object} PageInfo
  * @property {number} page
