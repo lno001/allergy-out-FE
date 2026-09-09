@@ -9,7 +9,8 @@ import { useBodyProfile } from "../../hooks/useBodyProfile";
 import { useDevice } from "../../hooks/useDevice";
 import { useStepsDashboard } from "../../hooks/useStepsDashboard";
 import { calculateCaloriesBurned, estimateBmr } from "../../utils/calorieCalc";
-import { SectionDivider, SectionTitle } from "./ProfileEditPage.styled";
+import CalorieRecommend from "./CalorieRecommend";
+import { SectionTitle } from "./ProfileEditPage.styled";
 import {
   AxisLabel,
   AxisRow,
@@ -91,10 +92,10 @@ function buildBars(days) {
 }
 
 /**
- * 마이페이지 "개인정보 관리" 탭 맨 아래에 붙는 라즈베리파이 만보기 연동 섹션.
- * 계정마다 기기를 등록할 수 있고(1회원 1디바이스, POST /api/rasp/devices 멱등 등록),
- * 등록된 계정만 실제 걸음 데이터/차트를 볼 수 있다. 키/몸무게는 조회자가 입력해서
- * 칼로리 계산에만 쓴다.
+ * 마이페이지 "소모 칼로리 측정" 탭 본문 (CaloriePage 가 셸로 감싼다).
+ * 만보기(라즈베리파이 걸음 수집기)를 계정에 연동하면(1회원 1디바이스,
+ * POST /api/rasp/devices 멱등 등록) 오늘/최근 7일 걸음 수와 소모 칼로리를 볼 수 있다.
+ * 키/몸무게는 조회자가 입력해서 칼로리 계산에만 쓴다.
  */
 function RaspSection() {
   const showToast = useContext(ToastContext);
@@ -170,19 +171,18 @@ function RaspSection() {
 
   return (
     <>
-      <SectionDivider />
-      <SectionTitle>라즈베리파이 연동</SectionTitle>
+      <SectionTitle>소모 칼로리 측정</SectionTitle>
 
       <Wrap>
         {deviceError && <Alert variant="danger">{deviceError}</Alert>}
 
         {isDeviceLoading ? (
-          <Loading label="디바이스 정보를 불러오는 중" />
+          <Loading label="만보기 정보를 불러오는 중" />
         ) : deviceNo == null ? (
           <RegisterRow>
-            <DeviceBadge>등록된 기기가 없어요.</DeviceBadge>
+            <DeviceBadge>연동된 만보기가 없어요.</DeviceBadge>
             <Button onClick={handleRegister} loading={isRegistering} size="sm">
-              기기 연결하기
+              만보기 연동하기
             </Button>
           </RegisterRow>
         ) : (
@@ -358,6 +358,8 @@ function RaspSection() {
                     </>
                   )}
                 </ChartBlock>
+
+                <CalorieRecommend totalCalories={totalCalories} />
               </>
             )}
           </>

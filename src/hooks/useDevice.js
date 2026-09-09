@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createDevice, getDevice } from "../apis/raspApi";
 
 /**
- * 마이페이지 "라즈베리파이 연동" 섹션의 디바이스 등록/조회 상태.
+ * 마이페이지 "소모 칼로리 측정" 탭의 만보기(디바이스) 등록/조회 상태.
  * - 마운트 시 조회. 미등록(404)은 에러가 아니라 정상 상태(deviceNo=null)로 다룬다.
  * - register()는 멱등 등록 — 이미 있어도 안전하게 다시 부를 수 있다.
  *

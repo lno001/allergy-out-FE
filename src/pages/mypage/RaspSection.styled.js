@@ -26,6 +26,28 @@ export const DeviceBadge = styled.span`
   color: ${theme.color.sub};
 `;
 
+/* 하단 칼로리 기반 레시피 추천 — 안내 문구 + 버튼 한 줄 */
+export const RecommendRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${theme.space.lg};
+  flex-wrap: wrap;
+`;
+
+export const RecommendHint = styled.p`
+  flex: 1;
+  min-width: 12rem;
+  font-size: ${theme.fontSize.sm};
+  line-height: ${theme.lineHeight.base};
+  color: ${theme.color.sub};
+
+  strong {
+    color: ${theme.color.text};
+    font-weight: ${theme.fontWeight.semibold};
+  }
+`;
+
 export const BodyInputRow = styled.div`
   display: flex;
   gap: ${theme.space.lg};
