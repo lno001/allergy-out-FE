@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useRef, useState } from "react";
 
 import Alert from "../../components/common/Alert";
 import Button from "../../components/common/Button";
@@ -16,7 +16,9 @@ import {
   BodyInputRow,
   ChartBlock,
   ChartSvg,
+  ChartSvgWrap,
   ChartTitle,
+  ChartTooltip,
   DeviceBadge,
   EmptyNote,
   RegisterRow,
@@ -58,7 +60,7 @@ function buildLineChart(points) {
     coords.map(([x, y]) => `L${x},${y}`).join(" ") +
     ` L${coords[coords.length - 1][0]},${BASELINE_Y} Z`;
   const last = coords[coords.length - 1];
-  return { polyline, area, last };
+  return { polyline, area, last, coords };
 }
 
 /**
@@ -81,6 +83,7 @@ function buildBars(days) {
       y: BASELINE_Y - height,
       width: Math.round(barWidth),
       height,
+      steps: d.steps,
       isToday: i === days.length - 1,
       label: `${d.date.slice(5, 7)}/${d.date.slice(8, 10)}`,
     };
@@ -100,6 +103,11 @@ function RaspSection() {
   const { points, days, isLoading: isStepsLoading, error: stepsError } =
     useStepsDashboard(Boolean(deviceNo));
   const { heightCm, weightKg, setHeightCm, setWeightKg } = useBodyProfile();
+  const [lineHover, setLineHover] = useState(null); // { index, x, y } | null — x/y는 차트 래퍼 기준 픽셀
+  const [barHover, setBarHover] = useState(null); // { index, x, y } | null
+  const [selectedBarIndex, setSelectedBarIndex] = useState(null);
+  const lineWrapRef = useRef(null);
+  const barWrapRef = useRef(null);
 
   const handleRegister = async () => {
     const result = await register();
@@ -117,6 +125,48 @@ function RaspSection() {
 
   const line = buildLineChart(points);
   const bars = days.length > 0 ? buildBars(days) : [];
+
+  const handleLineMouseMove = (e) => {
+    const svgRect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - svgRect.left) / svgRect.width) * CHART_W;
+    let nearest = 0;
+    let nearestDist = Infinity;
+    line.coords.forEach(([x], i) => {
+      const dist = Math.abs(x - svgX);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearest = i;
+      }
+    });
+    const wrapRect = lineWrapRef.current.getBoundingClientRect();
+    setLineHover({
+      index: nearest,
+      x: e.clientX - wrapRect.left,
+      y: e.clientY - wrapRect.top,
+    });
+  };
+
+  const barIndexAtEvent = (e) => {
+    const svgRect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - svgRect.left) / svgRect.width) * CHART_W;
+    const slotWidth = CHART_W / bars.length;
+    return Math.min(bars.length - 1, Math.max(0, Math.floor(svgX / slotWidth)));
+  };
+
+  const handleBarMouseMove = (e) => {
+    const index = barIndexAtEvent(e);
+    const wrapRect = barWrapRef.current.getBoundingClientRect();
+    setBarHover({
+      index,
+      x: e.clientX - wrapRect.left,
+      y: e.clientY - wrapRect.top,
+    });
+  };
+
+  const handleBarClick = (e) => {
+    const index = barIndexAtEvent(e);
+    setSelectedBarIndex((prev) => (prev === index ? null : index));
+  };
 
   return (
     <>
@@ -199,18 +249,45 @@ function RaspSection() {
                   <ChartTitle>오늘 걸음 추이</ChartTitle>
                   {line ? (
                     <>
-                      <ChartSvg viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
-                        <path d={line.area} fill="#EFF9F1" />
-                        <polyline
-                          points={line.polyline}
-                          fill="none"
-                          stroke="#2FA766"
-                          strokeWidth="3"
-                          strokeLinejoin="round"
-                          strokeLinecap="round"
-                        />
-                        <circle cx={line.last[0]} cy={line.last[1]} r="5" fill="#1F8A52" />
-                      </ChartSvg>
+                      <ChartSvgWrap ref={lineWrapRef}>
+                        <ChartSvg viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
+                          <path d={line.area} fill="#EFF9F1" />
+                          <polyline
+                            points={line.polyline}
+                            fill="none"
+                            stroke="#2FA766"
+                            strokeWidth="3"
+                            strokeLinejoin="round"
+                            strokeLinecap="round"
+                          />
+                          <circle cx={line.last[0]} cy={line.last[1]} r="5" fill="#1F8A52" />
+                          {lineHover && (
+                            <circle
+                              cx={line.coords[lineHover.index][0]}
+                              cy={line.coords[lineHover.index][1]}
+                              r="5"
+                              fill="#1F8A52"
+                            />
+                          )}
+                          <rect
+                            x="0"
+                            y="0"
+                            width={CHART_W}
+                            height={CHART_H}
+                            fill="transparent"
+                            style={{ cursor: "pointer", pointerEvents: "all" }}
+                            onMouseMove={handleLineMouseMove}
+                            onMouseLeave={() => setLineHover(null)}
+                          />
+                        </ChartSvg>
+                        {lineHover && (
+                          <ChartTooltip style={{ left: lineHover.x, top: lineHover.y }}>
+                            {`${points[lineHover.index].createDate.slice(11, 16)} · ${points[
+                              lineHover.index
+                            ].steps.toLocaleString()}보`}
+                          </ChartTooltip>
+                        )}
+                      </ChartSvgWrap>
                       <AxisRow>
                         <AxisLabel>{points[0].createDate.slice(11, 16)}</AxisLabel>
                         <AxisLabel>{points[points.length - 1].createDate.slice(11, 16)}</AxisLabel>
@@ -225,22 +302,55 @@ function RaspSection() {
                   <ChartTitle>최근 7일</ChartTitle>
                   {bars.length > 0 && (
                     <>
-                      <ChartSvg viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
-                        {bars.map((bar) => (
+                      <ChartSvgWrap ref={barWrapRef}>
+                        <ChartSvg viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
+                          {bars.map((bar, i) => {
+                            const isActive =
+                              selectedBarIndex != null
+                                ? i === selectedBarIndex
+                                : bar.isToday;
+                            return (
+                              <rect
+                                key={bar.label}
+                                x={bar.x}
+                                y={bar.y}
+                                width={bar.width}
+                                height={Math.max(bar.height, 2)}
+                                rx="6"
+                                fill={isActive ? "#2FA766" : "#B7E4C4"}
+                              />
+                            );
+                          })}
                           <rect
-                            key={bar.label}
-                            x={bar.x}
-                            y={bar.y}
-                            width={bar.width}
-                            height={Math.max(bar.height, 2)}
-                            rx="6"
-                            fill={bar.isToday ? "#2FA766" : "#B7E4C4"}
+                            x="0"
+                            y="0"
+                            width={CHART_W}
+                            height={CHART_H}
+                            fill="transparent"
+                            style={{ cursor: "pointer", pointerEvents: "all" }}
+                            onMouseMove={handleBarMouseMove}
+                            onMouseLeave={() => setBarHover(null)}
+                            onClick={handleBarClick}
                           />
-                        ))}
-                      </ChartSvg>
+                        </ChartSvg>
+                        {barHover && (
+                          <ChartTooltip style={{ left: barHover.x, top: barHover.y }}>
+                            {`${bars[barHover.index].label} · ${bars[
+                              barHover.index
+                            ].steps.toLocaleString()}보`}
+                          </ChartTooltip>
+                        )}
+                      </ChartSvgWrap>
                       <AxisRow>
-                        {bars.map((bar) => (
-                          <WeekAxisLabel key={bar.label} data-today={bar.isToday}>
+                        {bars.map((bar, i) => (
+                          <WeekAxisLabel
+                            key={bar.label}
+                            data-today={
+                              selectedBarIndex != null
+                                ? i === selectedBarIndex
+                                : bar.isToday
+                            }
+                          >
                             {bar.label}
                           </WeekAxisLabel>
                         ))}
