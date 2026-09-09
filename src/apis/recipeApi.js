@@ -20,6 +20,18 @@ export function getRecipeList(params) {
   return axiosInstance.get("/recipes", { params });
 }
 
+/**
+ * 오늘의 추천 — 필터된 전체에서 날짜 시드로 최대 3개.
+ * GET /api/recipes/recommend
+ *
+ * params: date(YYYY-MM-DD, 필수) + 목록과 같은 필터
+ *   keyword, excludeMaterials, recipeType, cookingMethod, applyMyAllergy
+ * page / size / sort 는 보내지 않음.
+ */
+export function getRecommendRecipes(params) {
+  return axiosInstance.get("/recipes/recommend", { params });
+}
+
 /** 레시피 단건 조회 */
 export function getRecipe(recipeNo) {
   return axiosInstance.get(`/recipes/${recipeNo}`);
