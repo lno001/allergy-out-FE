@@ -604,10 +604,13 @@ function RecipeListPage() {
                 <SearchIcon />
               </SearchSubmit>
             </SearchForm>
-            <RegisterButton to={RECIPE_FORM_PATH}>
-              <WriteIcon />
-              조리법 등록
-            </RegisterButton>
+            {/* 조리법 등록은 로그인 회원만 (비회원에겐 버튼 자체를 숨긴다) */}
+            {user && (
+              <RegisterButton to={RECIPE_FORM_PATH}>
+                <WriteIcon />
+                조리법 등록
+              </RegisterButton>
+            )}
           </ToolbarEnd>
         </ToolbarRow>
 
@@ -658,9 +661,17 @@ function RecipeListPage() {
         ) : recipes.length === 0 ? (
           <EmptyState>
             <EmptyText>등록된 레시피가 없습니다.</EmptyText>
-            <Button as={Link} to={RECIPE_FORM_PATH} variant="primary" size="sm">
-              첫 조리법 등록하기
-            </Button>
+            {/* "첫 조리법 등록" 도 로그인 회원에게만 */}
+            {user && (
+              <Button
+                as={Link}
+                to={RECIPE_FORM_PATH}
+                variant="primary"
+                size="sm"
+              >
+                첫 조리법 등록하기
+              </Button>
+            )}
           </EmptyState>
         ) : (
           <>
