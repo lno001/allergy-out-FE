@@ -4,7 +4,9 @@ import { useNavigate } from "react-router-dom";
 import Alert from "../../components/common/Alert";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
+import Loading from "../../components/common/Loading";
 import { ToastContext } from "../../components/common/ToastProvider";
+import { useAuth } from "../../hooks/useAuth";
 import { createRecipe } from "../../apis/recipeApi";
 import {
   COOKING_METHODS,
@@ -119,6 +121,7 @@ const validateImageFile = (file) => {
 
 function RecipeCreatePage() {
   const navigate = useNavigate();
+  const { user, isReady } = useAuth(); // isReady: 인증 부트스트랩 완료 여부
   const showToast = useContext(ToastContext);
   const mainImageInputRef = useRef(null);
   const previewUrlsRef = useRef([]); // 만든 objectURL 모음 — 페이지 벗어날 때 일괄 해제
@@ -143,6 +146,14 @@ function RecipeCreatePage() {
     () => () => previewUrlsRef.current.forEach(URL.revokeObjectURL),
     [],
   );
+
+  // 비회원 접근 차단 — 부트스트랩(토큰 재발급) 완료 후에도 로그인 상태가 아니면 로그인 화면으로.
+  // (isReady 전에는 판단 보류. 등록은 회원 전용 API 라 URL 직접 접근도 여기서 막는다)
+  useEffect(() => {
+    if (isReady && !user) {
+      navigate("/login", { replace: true });
+    }
+  }, [isReady, user, navigate]);
 
   /** 배열 state 의 index 행에서 patch 필드만 갈아끼운다 (재료·단계 공용) */
   const updateRow = (setRows, index, patch) =>
@@ -221,6 +232,15 @@ function RecipeCreatePage() {
       setIsSubmitting(false);
     }
   };
+
+  // 부트스트랩 중이거나 비회원(리다이렉트 직전)이면 폼을 그리지 않는다 — 깜빡임 방지
+  if (!isReady || !user) {
+    return (
+      <PageWrapper className="container">
+        <Loading label="불러오는 중" />
+      </PageWrapper>
+    );
+  }
 
   return (
     // .container = GlobalStyle 의 max-width + 가운데 정렬 + 좌우 패딩 유틸.
