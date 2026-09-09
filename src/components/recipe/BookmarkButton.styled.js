@@ -7,12 +7,12 @@ export const BookmarkFab = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: ${theme.space.xl};
-  height: ${theme.space.xl};
+  width: 28px;
+  height: 28px;
   border-radius: ${theme.radius.full};
   background-color: ${theme.color.bg};
   box-shadow: ${theme.shadow.sm};
-  font-size: ${theme.fontSize.sm};
+  font-size: ${theme.fontSize.md};
   line-height: 1;
   transition: transform ${theme.transition.fast};
 
