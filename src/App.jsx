@@ -7,6 +7,7 @@ import HomePage from "./pages/home/HomePage";
 import Preview from "./preview";
 import AllergyManagePage from "./pages/mypage/allergy/AllergyManagePage";
 import BookmarkListPage from "./pages/mypage/BookmarkListPage";
+import MyRecipesPage from "./pages/mypage/MyRecipesPage";
 import MyPage from "./pages/mypage/MyPage";
 import ProfileEditPage from "./pages/mypage/ProfileEditPage";
 import RecipeCreatePage from "./pages/recipe/RecipeCreatePage";
@@ -30,6 +31,7 @@ function App() {
           <Route index element={<ProfileEditPage />} />
           <Route path="allergy" element={<AllergyManagePage />} />
           <Route path="bookmark" element={<BookmarkListPage />} />
+          <Route path="recipes" element={<MyRecipesPage />} />
         </Route>
         <Route path="*" element={<HomePage />} />
       </Route>

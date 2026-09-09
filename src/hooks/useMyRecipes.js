@@ -1,37 +1,30 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { getBookmarkList } from "../apis/bookmarkApi";
+import { getMyRecipes } from "../apis/recipeApi";
 
-/** 디자인상 한 페이지 3x2 = 6개. (API 기본 size 는 20) */
-export const BOOKMARK_PAGE_SIZE = 6;
+/** 디자인상 한 페이지 3x2 = 6개 (즐겨찾기 탭과 동일). API 기본 size 는 20. */
+export const MY_RECIPES_PAGE_SIZE = 6;
 
 /**
- * 즐겨찾기 목록 조회 훅.
- * - page 는 Pagination 기준 1-based, 서버 요청 시 page-1 로 변환
- * - 최초 로드(isLoading)와 재조회(isFetching)를 분리 → 재조회 중엔 기존 목록을 살짝 흐리게
- * - refetch(): 현재 페이지를 서버에서 다시 읽어 목록·totalPages 재동기화.
- *   (하트 해제처럼 목록 구성이 바뀌는 액션 뒤에 호출 — 로컬 추측 대신 서버를 최종 기준으로)
+ * 내가 작성한 레시피 목록 조회 훅 — GET /api/recipes/me (인증 필수).
+ * useBookmarkList 와 같은 구조: 최초 로드(isLoading)와 페이지 전환(isFetching) 분리.
  *
  * @returns {{
  *   page: number, setPage: (p: number) => void,
- *   recipes: import('../apis/bookmarkApi').BookmarkListItem[],
+ *   recipes: any[], setRecipes: import('react').Dispatch<import('react').SetStateAction<any[]>>,
  *   totalPages: number,
  *   isLoading: boolean, isFetching: boolean, isError: boolean,
  *   error: { code: number, msg: string, data: object|null, status: number }|null,
- *   refetch: () => void,
  * }}
  */
-function useBookmarkList() {
+function useMyRecipes() {
   const [page, setPage] = useState(1);
   const [recipes, setRecipes] = useState([]);
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
-  const [reloadTick, setReloadTick] = useState(0);
   const loadedOnce = useRef(false);
-
-  const refetch = useCallback(() => setReloadTick((t) => t + 1), []);
 
   useEffect(() => {
     let alive = true;
@@ -39,7 +32,7 @@ function useBookmarkList() {
     else setIsLoading(true);
     setError(null);
 
-    getBookmarkList({ page: page - 1, size: BOOKMARK_PAGE_SIZE })
+    getMyRecipes({ page: page - 1, size: MY_RECIPES_PAGE_SIZE })
       .then((res) => {
         if (!alive) return;
         setRecipes(res.data.recipes);
@@ -58,19 +51,19 @@ function useBookmarkList() {
     return () => {
       alive = false;
     };
-  }, [page, reloadTick]);
+  }, [page]);
 
   return {
     page,
     setPage,
     recipes,
+    setRecipes,
     totalPages,
     isLoading,
     isFetching,
     isError: !!error,
     error,
-    refetch,
   };
 }
 
-export default useBookmarkList;
+export default useMyRecipes;

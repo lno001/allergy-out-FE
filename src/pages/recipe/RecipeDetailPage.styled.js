@@ -68,6 +68,30 @@ export const RecipeTitle = styled.h1`
   color: ${theme.color.text};
 `;
 
+/* 즐겨찾기 토글 — 제목 아래 알약 버튼. 비로그인 클릭 시 훅이 안내 토스트만 띄운다. */
+export const BookmarkToggle = styled.button`
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: ${theme.space.xs};
+  padding: ${theme.space.xs} ${theme.space.md};
+  border: 1px solid ${({ $on }) => ($on ? theme.color.primary : theme.color.border)};
+  border-radius: ${theme.radius.full};
+  background-color: ${({ $on }) => ($on ? theme.color.primary50 : theme.color.bg)};
+  font-size: ${theme.fontSize.sm};
+  color: ${theme.color.text};
+  transition: border-color ${theme.transition.fast}, background-color ${theme.transition.fast};
+
+  &:hover:not(:disabled) {
+    border-color: ${theme.color.primary};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+`;
+
 export const RecipeTip = styled.p`
   padding: ${theme.space.lg};
   font-size: ${theme.fontSize.sm};
