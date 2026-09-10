@@ -21,6 +21,9 @@ out/
 .env.production.local
 *.local
 
+# 배포 서버별 런타임 설정 (환경마다 값이 다름 — 서버에만 직접 둠, 로컬은 .env로 대체)
+public/config.js
+
 # Logs
 logs
 *.log

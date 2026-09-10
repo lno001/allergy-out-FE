@@ -37,7 +37,7 @@ jobs:
           fi
           echo "빌드 성공: dist 폴더가 생성되었습니다."
 
-      - name: Clear old dist on EC2
+      - name: Clear old dist on EC2 (config.js는 서버 전용 설정이라 보존)
         if: github.event_name == 'push'
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -45,8 +45,8 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            rm -rf /home/ubuntu/app/dist
             mkdir -p /home/ubuntu/app/dist
+            find /home/ubuntu/app/dist -mindepth 1 -maxdepth 1 ! -name 'config.js' -exec rm -rf {} +
 
       - name: Copy dist to EC2
         if: github.event_name == 'push'
