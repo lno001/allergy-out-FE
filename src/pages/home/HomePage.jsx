@@ -19,7 +19,6 @@ import {
   PhotoTrack,
   PhotoViewport,
   RotatingImg,
-  ShortcutButton,
   ShortcutLink,
   ShortcutRow,
   TextPanel,
@@ -254,14 +253,10 @@ function HomePage() {
           <ShortcutIcon />
           즐겨찾는 레시피 바로가기
         </ShortcutLink>
-        <ShortcutButton
-          type="button"
-          disabled
-          title="내 작성 레시피 페이지는 준비 중입니다"
-        >
+        <ShortcutLink to="/mypage/recipes">
           <ShortcutIcon />
           내 작성 레시피 바로가기
-        </ShortcutButton>
+        </ShortcutLink>
       </ShortcutRow>
     </>
   );
