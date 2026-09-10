@@ -2,7 +2,7 @@ import axios from "axios";
 import axiosInstance from "./axiosInstance";
 import { setAccessToken, clearAccessToken } from "../utils/accessTokenStore";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = window.ENV?.API_URL ?? import.meta.env.VITE_API_BASE_URL;
 
 export async function refresh() {
   const res = await axios.post(

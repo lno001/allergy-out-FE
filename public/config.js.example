@@ -1,0 +1,5 @@
+// 이 파일을 복사해서 public/config.js 로 만드세요 (git에는 안 올라감).
+// 배포 서버에서는 dist/config.js 를 직접 이 내용으로 만들어두면 재빌드 없이 API 주소를 바꿀 수 있음.
+window.ENV = {
+  API_URL: "https://allergyout.cloud/api",
+};
