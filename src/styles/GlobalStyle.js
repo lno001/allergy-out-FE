@@ -3,7 +3,7 @@ import { theme } from './theme';
 
 /**
  * 앱 전역 스타일 — CSS 리셋 + document/body 기본값 + 유틸리티 클래스.
- * main.jsx / preview.jsx 최상단에서 <GlobalStyle />로 한 번만 렌더링합니다.
+ * main.jsx 최상단에서 <GlobalStyle />로 한 번만 렌더링합니다.
  *
  * 개별 컴포넌트 스타일은 common.styled.js에 있습니다.
  * 여기에는 특정 컴포넌트에 속하지 않는 전역 규칙만 둡니다.
