@@ -88,3 +88,7 @@ export function updateRecipe(recipeNo, payload) {
 export function deleteRecipe(recipeNo) {
   return axiosInstance.delete(`/recipes/${recipeNo}`);
 }
+
+export function getRecipeCount() {
+  return axiosInstance.get("/recipes/count");
+}

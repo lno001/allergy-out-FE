@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { getRecipeList } from "../../apis/recipeApi";
+import { getRecipeCount, getRecipeList } from "../../apis/recipeApi";
 import bibimbapImg from "../../assets/home/bibimbap.jpg";
 import chickenImg from "../../assets/home/chicken.jpg";
 import saladImg from "../../assets/home/salad.jpg";
@@ -19,10 +19,16 @@ import {
   PhotoTrack,
   PhotoViewport,
   RotatingImg,
+  SearchCount,
+  SearchForm,
+  SearchInput,
+  SearchPrompt,
+  SearchSubmit,
   ShortcutLink,
   ShortcutRow,
   TextPanel,
 } from "./HomePage.styled";
+import { useNavigate } from "react-router-dom";
 
 /** 실제 등록된 레시피 사진을 못 받아왔을 때(초기 로딩 중, API 실패, 대표 이미지 있는
  *  레시피가 하나도 없음) 보여줄 기본 사진 4장. */
@@ -56,6 +62,25 @@ const STEP = TILE_SIZE + TILE_GAP;
 // 한 바퀴(사진 전체 개수)를 이 정도 반복해서 이어붙여야 화살표/자동 전환을 계속해도
 // 끝에 닿아 1번으로 튀어 돌아가는 일이 실사용에서 사실상 없다.
 const MIN_LOOPED_LENGTH = 160;
+
+function SearchIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
 
 /** 좌/우 화살표 아이콘 (dir: "prev" | "next") */
 function ChevronIcon({ dir }) {
@@ -101,6 +126,11 @@ function ShortcutIcon() {
 
 /** "/" 메인 페이지. 헤더/푸터는 Layout이 감싸서 그린다. */
 function HomePage() {
+  const [recipeCount, setRecipeCount] = useState(0);
+  const [keyword, setKeyword] = useState("");
+
+  const navigate = useNavigate();
+
   const { isReady } = useAuth(); // 토큰 재발급 부트스트랩 완료 후 조회해야 로그인 회원 알러지 제외가 반영됨
   const [photos, setPhotos] = useState(DEFAULT_PHOTOS);
 
@@ -115,6 +145,8 @@ function HomePage() {
     const fetchAndShuffle = async () => {
       try {
         const res = await getRecipeList({ page: 0, size: RANDOM_POOL_SIZE });
+        const countResult = await getRecipeCount();
+        setRecipeCount(countResult?.data ?? 0);
         const recipes = res?.data?.recipes ?? [];
         const withImage = recipes
           .filter((r) => r.recipesImgPath)
@@ -140,6 +172,8 @@ function HomePage() {
     };
   }, [isReady]);
 
+  useEffect(() => {}, []);
+
   // photos가 바뀔 때마다(기본 4장 → 실제 레시피로 교체) 다시 계산한다.
   const { loopedPhotos, startPos } = useMemo(() => {
     const loopCount = Math.max(3, Math.ceil(MIN_LOOPED_LENGTH / photos.length));
@@ -163,13 +197,22 @@ function HomePage() {
   }, [loopedPhotos]);
 
   const move = (step) =>
-    setCenterPos((p) => Math.min(Math.max(p + step, 0), loopedPhotos.length - 1));
+    setCenterPos((p) =>
+      Math.min(Math.max(p + step, 0), loopedPhotos.length - 1),
+    );
 
   useEffect(() => {
     const timerId = setTimeout(() => move(1), 5000);
     return () => clearTimeout(timerId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centerPos]);
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const trimmed = keyword.trim();
+    if (!trimmed) return;
+    navigate(`/recipe?keyword=${encodeURIComponent(trimmed)}`);
+  };
 
   const offsetRem = VIEWPORT_SIZE / 2 - TILE_SIZE / 2 - centerPos * STEP;
 
@@ -244,6 +287,25 @@ function HomePage() {
         </HeroGrid>
       </HeroSection>
 
+      <SearchPrompt>
+        현재 <SearchCount>{recipeCount}</SearchCount>개의 레시피가 있습니다.
+        지금 바로 검색해보세요.
+      </SearchPrompt>
+
+      <ShortcutRow>
+        <SearchForm onSubmit={handleSearchSubmit}>
+          <SearchInput
+            type="text"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="레시피를 조회해보세요"
+          />
+          <SearchSubmit type="submit" aria-label="검색">
+            <SearchIcon />
+          </SearchSubmit>
+        </SearchForm>
+      </ShortcutRow>
+
       <ShortcutRow>
         <ShortcutLink to="/recipe">
           <ShortcutIcon />
@@ -254,8 +316,7 @@ function HomePage() {
           즐겨찾는 레시피 바로가기
         </ShortcutLink>
         <ShortcutLink to="/mypage/recipes">
-          <ShortcutIcon />
-          내 작성 레시피 바로가기
+          <ShortcutIcon />내 작성 레시피 바로가기
         </ShortcutLink>
       </ShortcutRow>
     </>

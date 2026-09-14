@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigationType } from "react-router-dom";
+import { Link, useNavigationType, useSearchParams } from "react-router-dom";
 
 import Alert from "../../components/common/Alert";
 import Button from "../../components/common/Button";
@@ -236,8 +236,15 @@ function RecipeListPage() {
     navigationType === "POP" ? readListState() : null,
   );
 
+  // 홈 검색창(?keyword=...) 등 외부에서 검색어를 들고 새로 들어온 경우 — PUSH 진입에서만 의미 있음.
+  // (뒤로가기는 restored 가 우선이고, 헤더 링크로 들어오면 쿼리 자체가 없어 "" 그대로)
+  const [searchParams] = useSearchParams();
+  const initialKeywordFromUrl = searchParams.get("keyword") ?? "";
+
   const [page, setPage] = useState(restored?.page ?? 1); // 화면/Pagination 은 1부터, 서버는 0부터 → 요청 시 -1
-  const [keyword, setKeyword] = useState(restored?.keyword ?? ""); // 검색창 값 (controlled input)
+  const [keyword, setKeyword] = useState(
+    restored?.keyword ?? initialKeywordFromUrl,
+  ); // 검색창 값 (controlled input)
   const [excludeMaterials, setExcludeMaterials] = useState(
     /** @type {string[]} */ (restored?.excludeMaterials ?? []),
   ); // 필터 모달에서 "적용" 한 제외 재료명
