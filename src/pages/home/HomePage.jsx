@@ -19,6 +19,9 @@ import {
   PhotoTrack,
   PhotoViewport,
   RotatingImg,
+  SearchCount,
+  SearchInput,
+  SearchPrompt,
   ShortcutLink,
   ShortcutRow,
   TextPanel,
@@ -101,6 +104,8 @@ function ShortcutIcon() {
 
 /** "/" 메인 페이지. 헤더/푸터는 Layout이 감싸서 그린다. */
 function HomePage() {
+  const [recipeCounts, setRecipeCounts] = useState(0);
+
   const { isReady } = useAuth(); // 토큰 재발급 부트스트랩 완료 후 조회해야 로그인 회원 알러지 제외가 반영됨
   const [photos, setPhotos] = useState(DEFAULT_PHOTOS);
 
@@ -163,7 +168,9 @@ function HomePage() {
   }, [loopedPhotos]);
 
   const move = (step) =>
-    setCenterPos((p) => Math.min(Math.max(p + step, 0), loopedPhotos.length - 1));
+    setCenterPos((p) =>
+      Math.min(Math.max(p + step, 0), loopedPhotos.length - 1),
+    );
 
   useEffect(() => {
     const timerId = setTimeout(() => move(1), 5000);
@@ -244,6 +251,14 @@ function HomePage() {
         </HeroGrid>
       </HeroSection>
 
+      <SearchPrompt>
+        현재 <SearchCount>{recipeCounts}</SearchCount>개의 레시피가 있습니다.
+        지금 바로 검색해보세요.
+      </SearchPrompt>
+      <ShortcutRow>
+        <SearchInput type="text" placeholder="레시피를 조회해보세요" />
+      </ShortcutRow>
+
       <ShortcutRow>
         <ShortcutLink to="/recipe">
           <ShortcutIcon />
@@ -254,8 +269,7 @@ function HomePage() {
           즐겨찾는 레시피 바로가기
         </ShortcutLink>
         <ShortcutLink to="/mypage/recipes">
-          <ShortcutIcon />
-          내 작성 레시피 바로가기
+          <ShortcutIcon />내 작성 레시피 바로가기
         </ShortcutLink>
       </ShortcutRow>
     </>

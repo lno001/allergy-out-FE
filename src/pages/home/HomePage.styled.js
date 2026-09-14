@@ -87,7 +87,8 @@ export const PhotoTile = styled.div`
   border-radius: ${theme.radius.md};
   overflow: hidden;
   box-shadow: ${({ $active }) => ($active ? theme.shadow.lg : "none")};
-  border: ${({ $active }) => ($active ? `4px solid ${theme.color.white}` : "none")};
+  border: ${({ $active }) =>
+    $active ? `4px solid ${theme.color.white}` : "none"};
   opacity: ${({ $active }) => ($active ? 1 : 0.4)};
   transition: opacity 0.5s ease;
 `;
@@ -131,7 +132,9 @@ export const PhotoArrowBtn = styled.button`
   background: ${theme.color.white};
   border-radius: ${theme.radius.full};
   box-shadow: ${theme.shadow.md};
-  transition: transform ${theme.transition.fast}, background ${theme.transition.fast};
+  transition:
+    transform ${theme.transition.fast},
+    background ${theme.transition.fast};
 
   &:hover {
     background: ${theme.color.bgSoft};
@@ -164,7 +167,9 @@ const shortcutBase = css`
   font-size: 2.08rem;
   font-weight: ${theme.fontWeight.semibold};
   white-space: nowrap;
-  transition: background-color ${theme.transition.base}, box-shadow ${theme.transition.base},
+  transition:
+    background-color ${theme.transition.base},
+    box-shadow ${theme.transition.base},
     transform ${theme.transition.base};
 
   svg {
@@ -189,4 +194,39 @@ export const ShortcutButton = styled.button`
   ${shortcutBase}
   cursor: not-allowed;
   opacity: 0.55;
+`;
+
+export const SearchInput = styled.input`
+  width: 800px;
+  height: 60px;
+
+  padding: ${theme.space.sm} 3.6rem ${theme.space.sm} ${theme.space.lg};
+  font-size: ${theme.fontSize.lg};
+  color: ${theme.color.text};
+  background: ${theme.color.white};
+  border: 1px solid ${theme.color.border};
+  border-radius: 4%;
+
+  &::placeholder {
+    color: ${theme.color.placeholder};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${theme.color.borderFocus};
+  }
+`;
+
+export const SearchPrompt = styled.p`
+  text-align: center;
+  font-size: ${theme.fontSize["2xl"]};
+  font-weight: ${theme.fontWeight.medium};
+  color: ${theme.color.text};
+  margin-bottom: ${theme.space.lg};
+`;
+
+export const SearchCount = styled.span`
+  font-size: ${theme.fontSize["4xl"]};
+  font-weight: ${theme.fontWeight.bold};
+  color: ${theme.color.primary};
 `;
