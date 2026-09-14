@@ -230,3 +230,28 @@ export const SearchCount = styled.span`
   font-weight: ${theme.fontWeight.bold};
   color: ${theme.color.primary};
 `;
+export const SearchForm = styled.form`
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+`;
+export const SearchSubmit = styled.button`
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  color: ${theme.color.sub};
+  border-radius: ${theme.radius.sm};
+  transition: color ${theme.transition.fast};
+
+  &:hover {
+    color: ${theme.color.text};
+  }
+`;
