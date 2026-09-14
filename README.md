@@ -31,8 +31,7 @@ src/
 │   ├── GlobalStyle.js     # 전역 CSS 리셋 + body 기본값 + 유틸 클래스
 │   └── common.styled.js   # components/common 이 쓰는 styled 컴포넌트 모음
 ├── App.jsx                # 라우팅 자리표시자
-├── main.jsx               # 앱 엔트리 (GlobalStyle + ToastProvider + App)
-└── preview.jsx            # 컴포넌트 갤러리 (preview.html 로 실행)
+└── main.jsx               # 앱 엔트리 (GlobalStyle + ToastProvider + App)
 ```
 
 ## 실행
@@ -40,7 +39,6 @@ src/
 ```bash
 npm install
 npm run dev              # index.html → main.jsx (앱)
-npm run preview:gallery  # preview.html → preview.jsx (컴포넌트 갤러리)
 npm run build
 ```
 
@@ -121,7 +119,7 @@ GlobalStyle.js
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `theme.js`         | **디자인 토큰** — 색·타이포·간격·radius·shadow·transition·z-index. 모든 디자인 값의 **단일 출처**. 순수 JS 객체라서 `import { theme }` 로 가져다 씀. 값 변경은 **여기서만**.                                                                                                                                        | `common.styled.js`, 그리고 페이지 전용 styled 컴포넌트                   |
 | `common.styled.js` | **공용 "모양"** — `styled-components` 로 만든 재사용 styled 컴포넌트 모음(`ButtonBase`, `StyledInput`, `ModalBox` …). JSX·로직 없이 **CSS만** 담고, 값은 전부 `theme` 토큰 참조(하드코딩 금지). `variant`/`size` 처럼 조건부 스타일은 `$variant`, `$size` transient prop(`$` 접두사 — DOM 으로 안 내려감)으로 받음. | `components/common/*.jsx`                                                |
-| `GlobalStyle.js`   | **전역 CSS** — `createGlobalStyle` 로 만든 컴포넌트. `<head>` 에 CSS 리셋 + `body` 기본값(폰트·색·배경) + 폰트 로드 + `.container`·`.visually-hidden` 유틸을 주입. 특정 컴포넌트에 속하지 않는 규칙만 둠.                                                                                                           | `main.jsx` / `preview.jsx` 최상단에서 `<GlobalStyle />` **한 번만** 렌더 |
+| `GlobalStyle.js`   | **전역 CSS** — `createGlobalStyle` 로 만든 컴포넌트. `<head>` 에 CSS 리셋 + `body` 기본값(폰트·색·배경) + 폰트 로드 + `.container`·`.visually-hidden` 유틸을 주입. 특정 컴포넌트에 속하지 않는 규칙만 둠.                                                                                                           | `main.jsx` 최상단에서 `<GlobalStyle />` **한 번만** 렌더 |
 
 ### 쓰는 법
 
