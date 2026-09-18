@@ -53,10 +53,9 @@ function Footer() {
 
       <FooterBottom>
         <FooterBottomText>
-          주식회사 알러지아웃 | 대표자: 홍길동 | 서울시 마포구 월드컵북로 123
+          일부 레시피는 식품의약품안전처 「조리식품의 레시피 DB」를 활용해
           <br />
-          사업자등록번호: 120-00-00000 | 통신판매업신고번호: 제
-          2026-서울마포-0000호
+          사이트에 맞게 가공한 것입니다.
         </FooterBottomText>
         <FooterCopyright>
           allergy out © 2026. All rights reserved.
