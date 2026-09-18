@@ -61,8 +61,9 @@ function Header({ user = null, onLogout }) {
           </Nav>
         )}
 
-        {user && !isAdmin && (
+        {user && (
           <Nav>
+            {isAdmin && <NavItem to="/">관리자 페이지</NavItem>}
             <NavItem to="/mypage/allergy">알러지 정보</NavItem>
             <NavItem to="/recipe">레시피 조회</NavItem>
             <NavItem to="/mypage">마이페이지</NavItem>
@@ -74,15 +75,6 @@ function Header({ user = null, onLogout }) {
               />
               <UserName>{user.memberName} 님</UserName>
             </UserBadge>
-            <LogoutButton type="button" onClick={onLogout}>
-              로그아웃
-            </LogoutButton>
-          </Nav>
-        )}
-
-        {user && isAdmin && (
-          <Nav>
-            <NavItem to="/admin">관리자 페이지</NavItem>
             <LogoutButton type="button" onClick={onLogout}>
               로그아웃
             </LogoutButton>
